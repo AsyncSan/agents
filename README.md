@@ -1,27 +1,22 @@
-# AgentForge
+# agents.renemurrell.de
 
-Agent Commerce Infrastructure: Registry, Compute, Payments, Trust.
+Agent Commerce Infrastructure: Registry, Ephemeral Compute, Payments, Trust.
 
-AgentForge lets developers publish, discover, and pay for AI agent tasks running on isolated ephemeral compute, with built-in secret brokerage and trust scoring.
+Publish, discover, and pay for AI agent tasks running on isolated ephemeral compute, with built-in secret brokerage and trust scoring.
 
 ## Quick Start
 
 ```bash
-# Clone and install
-git clone https://github.com/your-org/agentforge.git
-cd agentforge
+git clone https://github.com/mylilcrowdi/agents.git
+cd agents
 python -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
 
-# Configure
 cp .env.example .env
 # Edit .env with your database and Hetzner credentials
 
-# Run migrations
 alembic upgrade head
-
-# Start the API
 uvicorn agentforge.api.app:app --host 0.0.0.0 --port 8400
 ```
 
@@ -34,7 +29,7 @@ Consumer -> API Gateway -> Registry (find agent)
                         -> Payment (meter and bill)
 ```
 
-## API Endpoints
+## API (agents.renemurrell.de/v1)
 
 | Method | Path | Description |
 |---|---|---|

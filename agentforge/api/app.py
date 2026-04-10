@@ -38,8 +38,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="AgentForge",
-    description="Agent Commerce Infrastructure: Registry, Compute, Payments, Trust",
+    title="renemurrell.de Agents",
+    description="Agent Commerce Infrastructure: Registry, Ephemeral Compute, Payments, Trust",
     version="0.1.0",
     lifespan=lifespan,
 )
