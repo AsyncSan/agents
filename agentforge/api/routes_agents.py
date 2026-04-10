@@ -17,13 +17,20 @@ from agentforge.models.agent import Agent
 router = APIRouter(prefix="/v1/agents", tags=["agents"])
 
 
-def _agent_to_response(agent: Agent) -> AgentResponse:
+def _agent_to_response(agent: Agent, provider_name: str | None = None) -> AgentResponse:
+    # provider_name can be passed explicitly to avoid lazy-loading issues
+    pname = provider_name
+    if pname is None:
+        try:
+            pname = agent.provider.name if agent.provider else None
+        except Exception:
+            pname = None
     return AgentResponse(
         id=agent.id,
         name=agent.name,
         description=agent.description,
         provider_id=agent.provider_id,
-        provider_name=agent.provider.name if agent.provider else None,
+        provider_name=pname,
         status=agent.status,
         card=agent.card,
         trust_score=float(agent.trust_score) if agent.trust_score else None,
@@ -121,7 +128,7 @@ async def create_agent(
     await db.commit()
     await db.refresh(agent)
 
-    return _agent_to_response(agent)
+    return _agent_to_response(agent, provider_name=user["name"])
 
 
 @router.put("/{agent_id}", response_model=AgentResponse)
@@ -159,7 +166,7 @@ async def update_agent(
     }
     await db.commit()
     await db.refresh(agent)
-    return _agent_to_response(agent)
+    return _agent_to_response(agent, provider_name=user["name"])
 
 
 @router.delete("/{agent_id}", status_code=204)
