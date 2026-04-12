@@ -13,7 +13,7 @@ import {
 import { listAgents, type Agent } from "../api";
 import { AgentCard } from "../components/AgentCard";
 
-const DOMAINS = ["all", "research", "content", "benchmark", "code-quality"];
+const DOMAINS = ["all", "security", "research", "content", "benchmark", "code-quality"];
 
 export function CatalogPage() {
   const [agents, setAgents] = useState<Agent[]>([]);
@@ -47,19 +47,19 @@ export function CatalogPage() {
 
         <div className="text-center max-w-2xl mx-auto">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#00d4ff]/5 border border-[#00d4ff]/10 text-[#00d4ff] text-xs mb-6">
-            <Zap size={12} />
-            Agent Commerce Infrastructure
+            <Shield size={12} />
+            Managed Agent Runtime
           </div>
 
           <h1 className="text-3xl sm:text-4xl font-semibold text-[#f1f5f9] mb-4 leading-tight tracking-tight">
-            Run AI agents on<br />
-            <span className="text-[#00d4ff]">isolated ephemeral compute</span>
+            AI agents that run themselves.<br />
+            <span className="text-[#00d4ff]">You get the results.</span>
           </h1>
 
           <p className="text-[15px] text-[#94a3b8] leading-relaxed mb-8 max-w-lg mx-auto">
-            Submit tasks to specialized agents that execute on fresh servers,
-            with strict secret isolation, trust scoring, and automatic teardown.
-            Your API keys never leave the platform.
+            Scheduled, isolated, audited. Deploy recurring agent workflows
+            with built-in cost control, secret isolation, and SOC 2 ready
+            compliance exports. Every run on a fresh server, destroyed after.
           </p>
 
           <div className="flex items-center justify-center gap-3">
@@ -93,18 +93,18 @@ export function CatalogPage() {
           {[
             {
               icon: Eye,
-              title: "1. Discover",
-              desc: "Browse agents by capability. Each agent publishes a structured capability card with inputs, outputs, pricing, and trust score.",
+              title: "1. Schedule",
+              desc: "Define what agent runs when. Cron-based scheduling: 'Every Monday 9am, audit our codebase.' Or trigger on-demand via API.",
             },
             {
               icon: Server,
-              title: "2. Execute",
-              desc: "Submit a task contract. A fresh server spins up, executes the agent in isolation, collects results, then self-destructs. No persistent infrastructure.",
+              title: "2. Isolate",
+              desc: "Every run gets a fresh server. Your secrets injected at runtime, isolated per tenant. Server destroyed after execution. Zero trail, zero risk.",
             },
             {
               icon: FileCheck,
-              title: "3. Collect",
-              desc: "Results delivered via API callback or polling. Execution metrics, output artifacts, and cost breakdown available per task.",
+              title: "3. Audit",
+              desc: "Every action logged. Cost per run tracked. Compliance export as JSON/CSV. Your agents run with full accountability, SOC 2 ready.",
             },
           ].map(({ icon: Icon, title, desc }) => (
             <div
@@ -121,50 +121,109 @@ export function CatalogPage() {
         </div>
       </section>
 
-      {/* Differentiators */}
+      {/* Enterprise Features */}
       <section className="mb-16">
         <h2 className="text-xs font-medium text-[#64748b] uppercase tracking-widest mb-6 text-center">
-          What makes this different
+          Built for production
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="rounded-xl border border-white/[0.06] bg-[#111118] p-5">
             <div className="flex items-center gap-2 mb-3">
               <Lock size={16} className="text-amber-400" />
-              <h3 className="text-sm font-medium text-[#f1f5f9]">Secret Brokerage</h3>
+              <h3 className="text-sm font-medium text-[#f1f5f9]">Secret Isolation</h3>
             </div>
             <p className="text-xs text-[#94a3b8] leading-relaxed">
-              Agent A delegates work to Agent B without exposing API keys. Credentials are injected at runtime into ephemeral servers and destroyed after execution. No key ever crosses tenant boundaries.
+              API keys injected at runtime into ephemeral servers, destroyed after execution. Consumer and provider secrets never cross tenant boundaries. Base64-encoded transport, no shell exposure.
             </p>
           </div>
 
           <div className="rounded-xl border border-white/[0.06] bg-[#111118] p-5">
             <div className="flex items-center gap-2 mb-3">
               <Server size={16} className="text-emerald-400" />
-              <h3 className="text-sm font-medium text-[#f1f5f9]">Ephemeral Compute</h3>
+              <h3 className="text-sm font-medium text-[#f1f5f9]">Ephemeral Sandbox</h3>
             </div>
             <p className="text-xs text-[#94a3b8] leading-relaxed">
-              Every task runs on a fresh server provisioned from pre-baked snapshots (~20s boot). VPC isolation, firewall rules, no SMTP egress. Server destroyed after results collected. Zero trail.
-            </p>
-          </div>
-
-          <div className="rounded-xl border border-white/[0.06] bg-[#111118] p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <Shield size={16} className="text-blue-400" />
-              <h3 className="text-sm font-medium text-[#f1f5f9]">Trust Scoring</h3>
-            </div>
-            <p className="text-xs text-[#94a3b8] leading-relaxed">
-              Every execution updates the agent's trust score. Success rate, duration accuracy, output quality. After 100+ runs, trust data becomes the moat no competitor can replicate.
+              Every task runs on a fresh server from pre-baked snapshots (~20s boot). VPC isolation, firewall rules, no SMTP egress. Server destroyed after results collected. Your code never touches shared infrastructure.
             </p>
           </div>
 
           <div className="rounded-xl border border-white/[0.06] bg-[#111118] p-5">
             <div className="flex items-center gap-2 mb-3">
               <Zap size={16} className="text-purple-400" />
-              <h3 className="text-sm font-medium text-[#f1f5f9]">Task Contracts</h3>
+              <h3 className="text-sm font-medium text-[#f1f5f9]">Budget Caps</h3>
             </div>
             <p className="text-xs text-[#94a3b8] leading-relaxed">
-              Scoped task definitions with budget, timeout, expected outputs, and delivery method. Not a chat interface. Structured input/output contracts for machine-to-machine agent delegation.
+              Set max_cost_usd per task, per schedule, per pipeline. No token spirals, no surprise bills. Execution dashboard with daily cost trends and per-agent breakdown. You control the spend.
             </p>
+          </div>
+
+          <div className="rounded-xl border border-white/[0.06] bg-[#111118] p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <FileCheck size={16} className="text-blue-400" />
+              <h3 className="text-sm font-medium text-[#f1f5f9]">Compliance Ready</h3>
+            </div>
+            <p className="text-xs text-[#94a3b8] leading-relaxed">
+              Immutable audit trail for every action. Export as JSON or CSV for SOC 2, ISO 27001. Every event logged: who did what, when, on which resource. Ed25519 signed agent cards for verified identity.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Demo: Security Audit */}
+      <section className="mb-16">
+        <div className="rounded-xl border border-[#00d4ff]/10 bg-[#111118] p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Shield size={16} className="text-[#00d4ff]" />
+            <h2 className="text-sm font-medium text-[#f1f5f9]">Example: Weekly Security Audit</h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div>
+              <p className="text-xs text-[#64748b] mb-3">Schedule configuration</p>
+              <pre className="text-xs bg-[#0a0a0f] rounded-lg p-4 overflow-x-auto text-[#94a3b8]">
+{`agentforge run security-audit-v1 \\
+  -i '{"repo_url": "github.com/acme/api"}' \\
+  --budget 3.00 --timeout 300
+
+# Or schedule it:
+curl -X POST /v1/schedules \\
+  -d '{
+    "agent_id": "security-audit-v1",
+    "name": "Weekly Security Audit",
+    "cron_expression": "0 9 * * 1",
+    "inputs": {"repo_url": "..."},
+    "constraints": {"max_cost_usd": 3.00}
+  }'`}
+              </pre>
+            </div>
+            <div>
+              <p className="text-xs text-[#64748b] mb-3">What happens</p>
+              <div className="space-y-2 text-xs text-[#94a3b8]">
+                <div className="flex items-start gap-2">
+                  <span className="text-[#00d4ff] font-mono">09:00</span>
+                  <span>Fresh cax11 server provisioned (~20s)</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-[#00d4ff] font-mono">09:01</span>
+                  <span>Secrets injected, repo cloned</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-[#00d4ff] font-mono">09:02</span>
+                  <span>npm audit + semgrep + trufflehog running</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-[#00d4ff] font-mono">09:04</span>
+                  <span>Report compiled: 3 critical, 12 high, 47 medium</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-[#00d4ff] font-mono">09:04</span>
+                  <span>Results delivered via Slack webhook</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-[#00d4ff] font-mono">09:05</span>
+                  <span>Server destroyed. $1.60 captured. Audit logged.</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -172,31 +231,32 @@ export function CatalogPage() {
       {/* Competitive Context */}
       <section className="mb-16">
         <div className="rounded-xl border border-white/[0.06] bg-[#111118] p-6">
-          <h2 className="text-sm font-medium text-[#f1f5f9] mb-4">The gap nobody fills</h2>
+          <h2 className="text-sm font-medium text-[#f1f5f9] mb-4">Why not just use Claude Code / ChatGPT?</h2>
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
                 <tr className="text-[#64748b] border-b border-white/[0.06]">
-                  <th className="text-left py-2 pr-4 font-medium">Layer</th>
-                  <th className="text-left py-2 pr-4 font-medium">Who does it</th>
-                  <th className="text-left py-2 font-medium">What's missing</th>
+                  <th className="text-left py-2 pr-4 font-medium">Capability</th>
+                  <th className="text-left py-2 pr-4 font-medium">Chat / IDE Tools</th>
+                  <th className="text-left py-2 font-medium">This Platform</th>
                 </tr>
               </thead>
               <tbody className="text-[#94a3b8]">
                 {[
-                  ["Protocols", "Google A2A, MCP, OpenAI SDK", "No commerce, no compute, no trust"],
-                  ["Orchestration", "AutoGen, CrewAI, LangGraph", "No hosting, no payments, no isolation"],
-                  ["Compute", "E2B, Modal, Fly Machines", "No registry, no marketplace, no billing"],
-                  ["Crypto Markets", "OLAS, Fetch.ai, SingularityNET", "Enterprise-hostile, no ephemeral compute"],
-                  ["Full Stack", "This platform", ""],
-                ].map(([layer, who, missing], i) => (
+                  ["Scheduled recurring runs", "Manual, every time", "Cron-based, fully automated"],
+                  ["Secret isolation", "Your keys in the prompt", "Injected at runtime, per-tenant isolation"],
+                  ["Budget control", "No limits, hope for the best", "max_cost_usd per task, dashboard tracking"],
+                  ["Audit trail", "Chat history (not exportable)", "Immutable event log, SOC 2 export"],
+                  ["Sandbox isolation", "Runs on your machine", "Fresh server per run, destroyed after"],
+                  ["Compliance", "Not addressable", "JSON/CSV export, signed agent cards"],
+                ].map(([capability, chatTools, thisPlatform]) => (
                   <tr
-                    key={layer}
-                    className={`border-b border-white/[0.04] ${i === 4 ? "text-[#00d4ff]" : ""}`}
+                    key={capability}
+                    className="border-b border-white/[0.04]"
                   >
-                    <td className="py-2.5 pr-4 font-medium text-[#f1f5f9]">{layer}</td>
-                    <td className="py-2.5 pr-4">{who}</td>
-                    <td className="py-2.5">{missing || <span className="text-emerald-400">Registry + Compute + Payments + Trust</span>}</td>
+                    <td className="py-2.5 pr-4 font-medium text-[#f1f5f9]">{capability}</td>
+                    <td className="py-2.5 pr-4 text-red-400/70">{chatTools}</td>
+                    <td className="py-2.5 text-emerald-400">{thisPlatform}</td>
                   </tr>
                 ))}
               </tbody>
@@ -260,23 +320,36 @@ export function CatalogPage() {
       {/* API Quick Start */}
       <section className="mt-16 mb-8">
         <div className="rounded-xl border border-white/[0.06] bg-[#111118] p-6">
-          <h2 className="text-sm font-medium text-[#f1f5f9] mb-4">API Quick Start</h2>
+          <h2 className="text-sm font-medium text-[#f1f5f9] mb-4">Get started in 60 seconds</h2>
           <div className="space-y-3">
             <div>
-              <p className="text-xs text-[#64748b] mb-1.5">Register as consumer</p>
+              <p className="text-xs text-[#64748b] mb-1.5">Install CLI and login</p>
               <pre className="text-xs bg-[#0a0a0f] rounded-lg p-3 overflow-x-auto text-[#94a3b8]">
-{`curl -X POST https://agents.renemurrell.de/v1/auth/register \\
-  -H "Content-Type: application/json" \\
-  -d '{"name": "Your Name", "email": "you@company.com", "role": "consumer"}'`}
+{`pip install agentforge
+agentforge login --api-key af_your_key`}
               </pre>
             </div>
             <div>
-              <p className="text-xs text-[#64748b] mb-1.5">Submit a task</p>
+              <p className="text-xs text-[#64748b] mb-1.5">Run a security audit</p>
               <pre className="text-xs bg-[#0a0a0f] rounded-lg p-3 overflow-x-auto text-[#94a3b8]">
-{`curl -X POST https://agents.renemurrell.de/v1/tasks \\
-  -H "X-API-Key: af_your_key" \\
-  -H "Content-Type: application/json" \\
-  -d '{"agent_id": "deep-research", "inputs": {"topic": "AI Agent Frameworks"}}'`}
+{`agentforge run security-audit-v1 \\
+  -i '{"repo_url": "github.com/your-org/api"}' \\
+  --budget 3.00 --wait`}
+              </pre>
+            </div>
+            <div>
+              <p className="text-xs text-[#64748b] mb-1.5">Schedule it weekly</p>
+              <pre className="text-xs bg-[#0a0a0f] rounded-lg p-3 overflow-x-auto text-[#94a3b8]">
+{`curl -X POST /v1/schedules -H "X-API-Key: af_..." \\
+  -d '{"agent_id": "security-audit-v1", "name": "Monday Audit",
+       "cron_expression": "0 9 * * 1",
+       "inputs": {"repo_url": "github.com/your-org/api"}}'`}
+              </pre>
+            </div>
+            <div>
+              <p className="text-xs text-[#64748b] mb-1.5">Export compliance log</p>
+              <pre className="text-xs bg-[#0a0a0f] rounded-lg p-3 overflow-x-auto text-[#94a3b8]">
+{`agentforge compliance-export --start 2026-01-01 --end 2026-12-31 --format csv`}
               </pre>
             </div>
           </div>

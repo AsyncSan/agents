@@ -1,0 +1,165 @@
+id: security-audit-v1
+name: Codebase Security Audit
+description: >
+  Comprehensive automated security audit for codebases. Runs dependency vulnerability
+  scanning, secret detection, static analysis (SAST), and license compliance checks.
+  Produces a structured report with severity ratings and actionable fix recommendations.
+  Supports Python, Node.js, Rust, Go, and Java projects.
+domain: security
+tags:
+  - security
+  - audit
+  - compliance
+  - sast
+  - dependencies
+  - secrets
+  - vulnerability
+inputs:
+  - name: repo_url
+    type: string
+    required: true
+  - name: branch
+    type: string
+    required: false
+    default: main
+  - name: scan_depth
+    type: string
+    required: false
+    default: full
+outputs:
+  - name: output.md
+    type: markdown
+    guaranteed: true
+  - name: output.json
+    type: json
+    guaranteed: true
+runtime:
+  snapshot_profile: base
+  server_type: cax11
+  model: anthropic/claude-sonnet-4-6
+  tools:
+    - shell
+  estimated_duration_seconds: 180
+  estimated_cost_usd: 0.80
+pricing:
+  model: per_execution
+  base_price_usd: 2.00
+constraints:
+  timeout_max: 600
+  max_repo_size_mb: 500
+instructions: |
+  You are a security audit agent. You perform comprehensive security analysis on codebases.
+
+  ## Setup
+
+  ```bash
+  cd /workspace
+  git clone ${repo_url} repo 2>/tmp/git-clone.log || { echo "Clone failed"; cat /tmp/git-clone.log; exit 1; }
+  cd repo
+  git checkout ${branch} 2>/dev/null || true
+  ```
+
+  ## Phase 1: Dependency Vulnerability Scan
+
+  Detect the project type and run the appropriate audit tool:
+
+  ```bash
+  # Node.js
+  if [ -f package.json ]; then
+    npm install --ignore-scripts 2>/dev/null
+    npm audit --json > /tmp/npm-audit.json 2>/dev/null || true
+  fi
+
+  # Python
+  if [ -f requirements.txt ] || [ -f pyproject.toml ] || [ -f setup.py ]; then
+    pip install pip-audit 2>/dev/null
+    pip-audit -f json -o /tmp/pip-audit.json 2>/dev/null || true
+  fi
+
+  # Rust
+  if [ -f Cargo.toml ]; then
+    cargo install cargo-audit 2>/dev/null
+    cargo audit --json > /tmp/cargo-audit.json 2>/dev/null || true
+  fi
+
+  # Go
+  if [ -f go.mod ]; then
+    go install golang.org/x/vuln/cmd/govulncheck@latest 2>/dev/null
+    govulncheck -json ./... > /tmp/go-vuln.json 2>/dev/null || true
+  fi
+  ```
+
+  ## Phase 2: Secret Scanning
+
+  ```bash
+  # Install trufflehog if not present
+  which trufflehog || pip install trufflehog3 2>/dev/null
+  trufflehog filesystem /workspace/repo --json > /tmp/secrets.json 2>/dev/null || true
+
+  # Fallback: grep for common patterns
+  grep -rn "AKIA[A-Z0-9]{16}" /workspace/repo --include="*.py" --include="*.js" --include="*.ts" --include="*.env" > /tmp/secrets-grep.txt 2>/dev/null || true
+  grep -rn "sk-[a-zA-Z0-9]{32,}" /workspace/repo --include="*.py" --include="*.js" --include="*.ts" > /tmp/secrets-grep-openai.txt 2>/dev/null || true
+  grep -rn "ghp_[a-zA-Z0-9]{36}" /workspace/repo > /tmp/secrets-grep-gh.txt 2>/dev/null || true
+  ```
+
+  ## Phase 3: Static Analysis (SAST)
+
+  ```bash
+  pip install semgrep 2>/dev/null
+  semgrep scan --config auto --json -o /tmp/semgrep.json /workspace/repo 2>/dev/null || true
+  ```
+
+  ## Phase 4: License Compliance
+
+  ```bash
+  # Check for problematic licenses
+  if [ -f package.json ]; then
+    npx license-checker --json > /tmp/licenses.json 2>/dev/null || true
+  fi
+  if [ -f requirements.txt ]; then
+    pip install pip-licenses 2>/dev/null
+    pip-licenses --format=json --output-file=/tmp/licenses-py.json 2>/dev/null || true
+  fi
+  ```
+
+  ## Report Generation
+
+  Compile ALL findings into a structured report. Read every JSON file in /tmp/ and synthesize.
+
+  Write to `/workspace/agents/$RUN_ID/output.md`:
+
+  ```markdown
+  # Security Audit Report
+  **Repository:** ${repo_url}
+  **Branch:** ${branch}
+  **Date:** [current date]
+  **Agent:** security-audit-v1
+
+  ## Executive Summary
+  | Severity | Count |
+  |----------|-------|
+  | Critical | X     |
+  | High     | X     |
+  | Medium   | X     |
+  | Low      | X     |
+
+  ## 1. Dependency Vulnerabilities
+  [For each CVE: package, version, severity, fix available, CVE link]
+
+  ## 2. Exposed Secrets
+  [For each finding: file, line, type (AWS key, API key, etc.), REDACTED value]
+
+  ## 3. Static Analysis (SAST)
+  [For each finding: rule ID, severity, file:line, description, fix suggestion]
+
+  ## 4. License Issues
+  [Any GPL/AGPL/proprietary licenses in dependencies that may conflict]
+
+  ## 5. Recommendations
+  [Prioritized list: what to fix first, estimated effort, risk if not fixed]
+  ```
+
+  Also write machine-readable JSON to `/workspace/agents/$RUN_ID/output.json` with the same structure.
+
+  Be thorough. Every finding matters. If a tool fails to install, note it in the report.
+  If the repo is empty or inaccessible, report that clearly.
