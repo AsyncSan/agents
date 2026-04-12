@@ -376,3 +376,82 @@ class PaymentSetupResponse(BaseModel):
     stripe_customer_id: str
     payment_method_attached: bool
     default_payment_method: str | None
+
+
+# --- Schedules ---
+
+
+class ScheduleCreateRequest(BaseModel):
+    agent_id: str
+    name: str = Field(min_length=2, max_length=255)
+    cron_expression: str = Field(
+        min_length=9, max_length=100,
+        description="Cron expression (5 fields): '0 9 * * 1' = Monday 9am UTC",
+    )
+    timezone: str = "UTC"
+    inputs: dict = {}
+    constraints: TaskConstraints = TaskConstraints()
+    callback_url: str | None = None
+
+
+class ScheduleResponse(BaseModel):
+    id: UUID
+    consumer_id: UUID
+    agent_id: str
+    name: str
+    cron_expression: str
+    timezone: str
+    inputs: dict | None
+    constraints: dict | None
+    callback_url: str | None
+    active: bool
+    total_runs: int
+    last_run_at: str | None
+    next_run_at: str | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class ScheduleListResponse(BaseModel):
+    schedules: list[ScheduleResponse]
+    total: int
+
+
+# --- Dashboard ---
+
+
+class DailyUsage(BaseModel):
+    date: str  # YYYY-MM-DD
+    executions: int
+    success: int
+    failed: int
+    total_cost_cents: int
+    total_duration_seconds: int
+
+
+class AgentUsageSummary(BaseModel):
+    agent_id: str
+    agent_name: str
+    executions: int
+    total_cost_cents: int
+    avg_duration_seconds: float | None
+
+
+class DashboardResponse(BaseModel):
+    period_days: int
+    total_executions: int
+    total_success: int
+    total_failed: int
+    total_cost_cents: int
+    avg_cost_per_run_cents: float | None
+    daily_usage: list[DailyUsage]
+    top_agents: list[AgentUsageSummary]
+
+
+# --- Compliance Export ---
+
+
+class ComplianceExportRequest(BaseModel):
+    start_date: str = Field(description="ISO date: YYYY-MM-DD")
+    end_date: str = Field(description="ISO date: YYYY-MM-DD")
+    format: str = Field(default="json", pattern="^(json|csv)$")

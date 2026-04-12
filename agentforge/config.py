@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     # Hetzner
     hcloud_token: str = ""
     hcloud_ssh_key_name: str = "async@pi5"
+    hcloud_ssh_key_path: str = ""
     hcloud_network_name: str = "renemurrell-vpc"
     hcloud_firewall_name: str = "renemurrell-agents-firewall"
     hcloud_location: str = "nbg1"

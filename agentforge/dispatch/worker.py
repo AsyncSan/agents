@@ -40,6 +40,7 @@ def get_dispatcher() -> AgentForgeDispatcher:
         provider = HetznerProvider(
             hcloud_token=settings.hcloud_token,
             ssh_key_name=settings.hcloud_ssh_key_name,
+            ssh_key_path=settings.hcloud_ssh_key_path or None,
             network_name=settings.hcloud_network_name,
             firewall_name=settings.hcloud_firewall_name,
             location=settings.hcloud_location,

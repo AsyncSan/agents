@@ -9,6 +9,7 @@ from agentforge.models.execution import Execution
 from agentforge.models.pipeline import Pipeline
 from agentforge.models.provider import Provider
 from agentforge.models.rating import Rating
+from agentforge.models.schedule import Schedule
 from agentforge.models.task import Task
 from agentforge.models.webhook import Webhook
 
@@ -22,6 +23,7 @@ __all__ = [
     "Pipeline",
     "Provider",
     "Rating",
+    "Schedule",
     "Task",
     "Webhook",
 ]

@@ -34,6 +34,7 @@ dependencies = [
     "stripe>=12.0.0",
     "typer>=0.12.0",
     "rich>=13.0.0",
+    "croniter>=2.0.0",
 ]
 
 [project.scripts]

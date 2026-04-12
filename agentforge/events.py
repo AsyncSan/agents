@@ -39,6 +39,9 @@ EVENT_TYPES = [
     "payment.captured",
     "payment.cancelled",
     "rating.created",
+    "schedule.created",
+    "schedule.deleted",
+    "schedule.fired",
     "webhook.created",
     "webhook.deleted",
 ]

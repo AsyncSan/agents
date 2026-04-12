@@ -316,6 +316,15 @@ class AgentForgeDispatcher:
 set -euo pipefail
 source /workspace/secrets/api-keys.env 2>/dev/null || true
 export DISPLAY=:99 2>/dev/null || true
+
+# Inject API key into OpenClaw auth-profiles if ANTHROPIC_API_KEY is set
+if [ -n "${{ANTHROPIC_API_KEY:-}}" ]; then
+    AGENT_DIR=/root/.openclaw/agents/main/agent
+    mkdir -p "$AGENT_DIR"
+    cat > "$AGENT_DIR/auth-profiles.json" << AUTHEOF
+{{"version":1,"profiles":{{"anthropic:manual":{{"type":"token","provider":"anthropic","token":"$ANTHROPIC_API_KEY"}}}},"lastGood":{{"anthropic":"anthropic:manual"}},"usageStats":{{}}}}
+AUTHEOF
+fi
 cd /workspace/agents/{run_id}
 
 START_TS=$(date +%s)
