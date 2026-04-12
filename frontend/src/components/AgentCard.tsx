@@ -3,6 +3,7 @@ import { ArrowRight, Clock, DollarSign, Shield } from "lucide-react";
 import type { Agent } from "../api";
 
 const domainColors: Record<string, string> = {
+  security: "bg-red-500/10 text-red-400 border-red-500/20",
   research: "bg-blue-500/10 text-blue-400 border-blue-500/20",
   content: "bg-purple-500/10 text-purple-400 border-purple-500/20",
   benchmark: "bg-amber-500/10 text-amber-400 border-amber-500/20",
