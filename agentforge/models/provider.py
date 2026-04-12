@@ -3,7 +3,7 @@
 import uuid
 
 from sqlalchemy import String, Text
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from agentforge.models.base import Base, TimestampMixin
@@ -16,5 +16,13 @@ class Provider(Base, TimestampMixin):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
     api_key_hash: Mapped[str] = mapped_column(Text, nullable=False)
+
+    # Ed25519 keypair for signing agent cards
+    signing_public_key: Mapped[str | None] = mapped_column(Text, nullable=True)
+    signing_private_key: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # Provider secrets injected into ephemeral servers at /workspace/secrets/provider/
+    # Format: {"ANTHROPIC_API_KEY": "sk-...", "GH_TOKEN": "ghp_..."}
+    secrets: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
     agents = relationship("Agent", back_populates="provider", lazy="selectin")

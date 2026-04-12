@@ -26,6 +26,11 @@ class Settings(BaseSettings):
     snapshot_gui: str = "370465176"
     snapshot_gui_x86: str = "370835039"
 
+    # Stripe
+    stripe_secret_key: str = ""
+    stripe_webhook_secret: str = ""
+    stripe_platform_fee_percent: int = 20  # 20% take rate
+
     # Limits
     max_concurrent_agents: int = 5
     default_task_timeout: int = 1800

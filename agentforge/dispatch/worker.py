@@ -8,14 +8,24 @@ import asyncio
 import logging
 from datetime import datetime, timezone
 
+import httpx
 from sqlalchemy import select, update
 
+from agentforge.billing import (
+    authorize_task_payment,
+    cancel_payment,
+    capture_payment,
+    is_billing_enabled,
+)
 from agentforge.config import settings
 from agentforge.db import async_session
 from agentforge.dispatch.compute import HetznerProvider
 from agentforge.dispatch.dispatcher import AgentForgeDispatcher, SecretSet
+from agentforge.dispatch.pipeline import advance_pipeline
 from agentforge.models.agent import Agent
+from agentforge.models.consumer import Consumer
 from agentforge.models.execution import Execution
+from agentforge.models.provider import Provider
 from agentforge.models.task import Task
 
 log = logging.getLogger("agentforge.worker")
@@ -44,6 +54,32 @@ def get_dispatcher() -> AgentForgeDispatcher:
     return _dispatcher
 
 
+async def _send_callback(
+    task: Task,
+    execution_id: str,
+    status: str,
+    elapsed: int | None = None,
+) -> None:
+    """Fire-and-forget POST to task.callback_url after completion."""
+    if not task.callback_url:
+        return
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            await client.post(
+                task.callback_url,
+                json={
+                    "task_id": task.id,
+                    "agent_id": task.agent_id,
+                    "status": status,
+                    "execution_id": execution_id,
+                    "elapsed_seconds": elapsed,
+                },
+            )
+        log.info(f"Callback sent for {task.id} to {task.callback_url}")
+    except Exception as e:
+        log.warning(f"Callback failed for {task.id}: {e}")
+
+
 async def process_task(task_id: str) -> None:
     """Process a single pending task: dispatch to ephemeral compute."""
     dispatcher = get_dispatcher()
@@ -62,6 +98,40 @@ async def process_task(task_id: str) -> None:
             await db.commit()
             return
 
+        # Authorize payment if billing is configured
+        payment_intent_id = None
+        if is_billing_enabled():
+            agent_price = agent.card.get("pricing", {}).get("base_price_usd", 0)
+            if agent_price > 0:
+                try:
+                    stripe_customer = None
+                    cr = await db.execute(
+                        select(Consumer).where(Consumer.id == task.consumer_id)
+                    )
+                    c = cr.scalar_one_or_none()
+                    if c:
+                        stripe_customer = c.stripe_customer_id
+
+                    payment = await asyncio.get_event_loop().run_in_executor(
+                        None,
+                        lambda: authorize_task_payment(
+                            task_id=task.id,
+                            amount_usd=agent_price,
+                            customer_id=stripe_customer,
+                            description=f"Agent task: {agent.name}",
+                        ),
+                    )
+                    payment_intent_id = payment.get("payment_intent_id")
+                    task.payment_intent_id = payment_intent_id
+                    task.payment_status = "authorized"
+                    task.amount_authorized_cents = payment.get("amount_cents")
+                except Exception as e:
+                    log.error(f"Payment authorization failed for {task.id}: {e}")
+                    task.status = "failed"
+                    task.payment_status = "auth_failed"
+                    await db.commit()
+                    return
+
         # Mark as dispatching
         task.status = "dispatching"
         await db.commit()
@@ -77,15 +147,34 @@ async def process_task(task_id: str) -> None:
         db.add(execution)
         await db.commit()
 
+    # Load consumer and provider secrets from DB
+    consumer_keys: dict[str, str] = {}
+    provider_keys: dict[str, str] = {}
+    async with async_session() as db:
+        consumer_result = await db.execute(
+            select(Consumer).where(Consumer.id == task.consumer_id)
+        )
+        consumer = consumer_result.scalar_one_or_none()
+        if consumer and consumer.secrets:
+            consumer_keys = consumer.secrets
+
+        provider_result = await db.execute(
+            select(Provider).where(Provider.id == agent.provider_id)
+        )
+        provider = provider_result.scalar_one_or_none()
+        if provider and provider.secrets:
+            provider_keys = provider.secrets
+
     # Run dispatch in thread pool (blocking I/O: SSH, hcloud CLI)
     try:
-        # Build secrets from platform config
-        # In production, these come from a vault per-consumer and per-provider
-        secrets = SecretSet(api_keys={})
-        if settings.hcloud_token:
-            # For now, use platform-level API keys
-            # TODO: Per-consumer and per-provider secret isolation
-            pass
+        secrets = SecretSet(
+            consumer_keys=consumer_keys or None,
+            provider_keys=provider_keys or None,
+        )
+
+        # Extract task-level timeout from constraints
+        task_constraints = task.constraints or {}
+        task_timeout = task_constraints.get("timeout")
 
         dispatch_result = await asyncio.get_event_loop().run_in_executor(
             None,
@@ -94,6 +183,7 @@ async def process_task(task_id: str) -> None:
                 task_inputs=task.inputs or {},
                 run_id=run_id,
                 secrets=secrets,
+                task_timeout=task_timeout,
             ),
         )
 
@@ -119,25 +209,93 @@ async def process_task(task_id: str) -> None:
                 .values(status="completed" if dispatch_result.success else "failed")
             )
 
-            # Update agent trust metrics
-            if dispatch_result.success:
-                await db.execute(
-                    update(Agent)
-                    .where(Agent.id == agent.id)
-                    .values(
-                        total_executions=Agent.total_executions + 1,
-                        success_count=Agent.success_count + 1,
-                    )
-                )
+            # Update agent trust metrics and recompute trust score
+            from agentforge.trust import compute_trust_score
+
+            agent_result = await db.execute(select(Agent).where(Agent.id == agent.id))
+            agent_fresh = agent_result.scalar_one()
+
+            new_total = agent_fresh.total_executions + 1
+            new_success = agent_fresh.success_count + (1 if dispatch_result.success else 0)
+
+            # Rolling average duration
+            old_avg = float(agent_fresh.avg_duration_seconds or 0)
+            elapsed = dispatch_result.elapsed_seconds or 0
+            if old_avg == 0:
+                new_avg = float(elapsed)
             else:
-                await db.execute(
-                    update(Agent)
-                    .where(Agent.id == agent.id)
-                    .values(total_executions=Agent.total_executions + 1)
+                new_avg = old_avg + (elapsed - old_avg) / new_total
+
+            # Expected duration from agent card
+            expected_duration = agent_fresh.card.get("runtime", {}).get(
+                "estimated_duration_seconds", 300
+            )
+
+            trust = compute_trust_score(
+                total_executions=new_total,
+                success_count=new_success,
+                avg_duration=new_avg,
+                expected_duration=expected_duration,
+            )
+
+            await db.execute(
+                update(Agent)
+                .where(Agent.id == agent.id)
+                .values(
+                    total_executions=new_total,
+                    success_count=new_success,
+                    avg_duration_seconds=new_avg,
+                    trust_score=trust,
                 )
+            )
+
+            # Capture or cancel payment
+            if payment_intent_id:
+                if dispatch_result.success:
+                    auth_cents = task.amount_authorized_cents or 0
+                    cap_result = await asyncio.get_event_loop().run_in_executor(
+                        None,
+                        lambda: capture_payment(
+                            task_id, payment_intent_id, auth_cents
+                        ),
+                    )
+                    if cap_result["captured"]:
+                        await db.execute(
+                            update(Task)
+                            .where(Task.id == task_id)
+                            .values(
+                                payment_status="captured",
+                                amount_captured_cents=auth_cents,
+                                platform_fee_cents=cap_result["fee_cents"],
+                            )
+                        )
+                else:
+                    await asyncio.get_event_loop().run_in_executor(
+                        None,
+                        lambda: cancel_payment(task_id, payment_intent_id),
+                    )
+                    await db.execute(
+                        update(Task)
+                        .where(Task.id == task_id)
+                        .values(payment_status="cancelled")
+                    )
 
             await db.commit()
-            log.info(f"Task {task_id} completed: success={dispatch_result.success}")
+
+            log.info(
+                f"Task {task_id} completed: success={dispatch_result.success}, "
+                f"trust={trust:.2f}"
+            )
+
+        # Pipeline advancement or standalone callback
+        if task.pipeline_id:
+            async with async_session() as db:
+                await advance_pipeline(task_id, db)
+        else:
+            final_status = "completed" if dispatch_result.success else "failed"
+            await _send_callback(
+                task, run_id, final_status, dispatch_result.elapsed_seconds
+            )
 
     except Exception as e:
         log.error(f"Task {task_id} dispatch failed: {e}")
@@ -150,7 +308,25 @@ async def process_task(task_id: str) -> None:
                 .where(Execution.id == run_id)
                 .values(status="failed", completed_at=datetime.now(timezone.utc))
             )
+            # Cancel payment on dispatch failure
+            if payment_intent_id:
+                await asyncio.get_event_loop().run_in_executor(
+                    None,
+                    lambda: cancel_payment(task_id, payment_intent_id),
+                )
+                await db.execute(
+                    update(Task)
+                    .where(Task.id == task_id)
+                    .values(payment_status="cancelled")
+                )
             await db.commit()
+
+        # Pipeline advancement or standalone callback on failure
+        if task.pipeline_id:
+            async with async_session() as db:
+                await advance_pipeline(task_id, db)
+        else:
+            await _send_callback(task, run_id, "failed")
 
 
 async def dispatch_worker_loop(poll_interval: int = 5) -> None:

@@ -3,7 +3,7 @@
 import uuid
 
 from sqlalchemy import String, Text
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from agentforge.models.base import Base, TimestampMixin
@@ -17,5 +17,9 @@ class Consumer(Base, TimestampMixin):
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
     api_key_hash: Mapped[str] = mapped_column(Text, nullable=False)
     stripe_customer_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
+    # Encrypted secrets injected into ephemeral servers at /workspace/secrets/consumer/
+    # Format: {"OPENAI_API_KEY": "sk-...", "SERPER_API_KEY": "..."}
+    secrets: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
     tasks = relationship("Task", back_populates="consumer", lazy="selectin")

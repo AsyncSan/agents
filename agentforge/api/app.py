@@ -9,7 +9,15 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from agentforge.api.routes_agents import router as agents_router
 from agentforge.api.routes_auth import router as auth_router
+from agentforge.api.routes_payment import router as payment_router
+from agentforge.api.routes_pipelines import router as pipelines_router
+from agentforge.api.routes_platform import router as platform_router
+from agentforge.api.routes_providers import router as providers_router
+from agentforge.api.routes_ratings import router as ratings_router
+from agentforge.api.routes_secrets import router as secrets_router
+from agentforge.api.routes_stripe import router as stripe_router
 from agentforge.api.routes_tasks import router as tasks_router
+from agentforge.api.routes_webhooks import router as webhooks_router
 from agentforge.config import settings
 
 log = logging.getLogger("agentforge")
@@ -54,7 +62,15 @@ app.add_middleware(
 
 app.include_router(auth_router)
 app.include_router(agents_router)
+app.include_router(providers_router)
 app.include_router(tasks_router)
+app.include_router(pipelines_router)
+app.include_router(secrets_router)
+app.include_router(stripe_router)
+app.include_router(platform_router)
+app.include_router(webhooks_router)
+app.include_router(ratings_router)
+app.include_router(payment_router)
 
 
 @app.get("/healthz")

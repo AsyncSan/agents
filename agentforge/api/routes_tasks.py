@@ -2,8 +2,10 @@
 
 import secrets
 from datetime import datetime, timezone
+from pathlib import Path
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
+from fastapi.responses import PlainTextResponse
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -20,6 +22,19 @@ from agentforge.models.execution import Execution
 from agentforge.models.task import Task
 
 router = APIRouter(prefix="/v1/tasks", tags=["tasks"])
+
+
+async def _check_task_access(
+    task: Task, user: dict, db: AsyncSession
+) -> None:
+    """Verify the user has access to this task."""
+    if user["role"] == "consumer" and task.consumer_id != user["id"]:
+        raise HTTPException(status_code=403, detail="Not your task")
+    if user["role"] == "provider":
+        agent_result = await db.execute(select(Agent).where(Agent.id == task.agent_id))
+        agent = agent_result.scalar_one_or_none()
+        if not agent or agent.provider_id != user["id"]:
+            raise HTTPException(status_code=403, detail="Not your agent's task")
 
 
 def _generate_task_id() -> str:
@@ -56,21 +71,41 @@ async def create_task(
     if not agent or agent.status != "active":
         raise HTTPException(status_code=404, detail="Agent not found or inactive")
 
+    # Budget enforcement: reject if agent base price exceeds consumer's max_cost_usd
+    agent_price = agent.card.get("pricing", {}).get("base_price_usd", 0)
+    budget_cap = req.constraints.max_cost_usd
+    if budget_cap is not None and agent_price > budget_cap:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Agent price ${agent_price:.2f} exceeds budget ${budget_cap:.2f}",
+        )
+
+    # Timeout enforcement: cap at agent's max, floor at 60s
+    caps = agent.card.get("capabilities", {}).get("constraints", {})
+    agent_timeout_max = caps.get("timeout_max", 3600)
+    task_timeout = req.constraints.timeout
+    if task_timeout is not None:
+        task_timeout = max(60, min(task_timeout, agent_timeout_max))
+    else:
+        task_timeout = agent_timeout_max
+
+    constraints_dict = {
+        "timeout": task_timeout,
+        "max_cost_usd": req.constraints.max_cost_usd,
+    }
+
     task = Task(
         id=_generate_task_id(),
         consumer_id=user["id"],
         agent_id=req.agent_id,
         inputs=req.inputs,
-        constraints=req.constraints,
+        constraints=constraints_dict,
         callback_url=req.callback_url,
         status="pending",
     )
     db.add(task)
     await db.commit()
     await db.refresh(task)
-
-    # TODO: Phase 2, trigger dispatch in background
-    # background_tasks.add_task(dispatch_task, task.id)
 
     return _task_to_response(task)
 
@@ -119,10 +154,7 @@ async def get_task(
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
 
-    # Authorization check
-    if user["role"] == "consumer" and task.consumer_id != user["id"]:
-        raise HTTPException(status_code=403, detail="Not your task")
-
+    await _check_task_access(task, user, db)
     return _task_to_response(task)
 
 
@@ -137,6 +169,8 @@ async def get_task_executions(
     task = result.scalar_one_or_none()
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
+
+    await _check_task_access(task, user, db)
 
     result = await db.execute(
         select(Execution).where(Execution.task_id == task_id).order_by(Execution.created_at.desc())
@@ -154,7 +188,53 @@ async def get_task_executions(
             elapsed_seconds=e.elapsed_seconds,
             exit_code=e.exit_code,
             metrics=e.metrics,
+            results_path=e.results_path,
             created_at=e.created_at,
         )
         for e in executions
     ]
+
+
+_ALLOWED_RESULT_FILES = {"output.md", "stdout.log", "stderr.log", "usage.json"}
+
+
+@router.get("/{task_id}/result")
+async def get_task_result(
+    task_id: str,
+    file: str = "output.md",
+    user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Download a result file from a completed task execution."""
+    if file not in _ALLOWED_RESULT_FILES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"File must be one of: {', '.join(sorted(_ALLOWED_RESULT_FILES))}",
+        )
+
+    # Auth: verify task ownership
+    result = await db.execute(select(Task).where(Task.id == task_id))
+    task = result.scalar_one_or_none()
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    await _check_task_access(task, user, db)
+
+    # Get latest execution with results
+    result = await db.execute(
+        select(Execution)
+        .where(Execution.task_id == task_id)
+        .where(Execution.results_path.isnot(None))
+        .order_by(Execution.created_at.desc())
+        .limit(1)
+    )
+    execution = result.scalar_one_or_none()
+    if not execution or not execution.results_path:
+        raise HTTPException(status_code=404, detail="No results available")
+
+    file_path = Path(execution.results_path) / file
+    if not file_path.is_file():
+        raise HTTPException(status_code=404, detail=f"File '{file}' not found")
+
+    content = file_path.read_text(encoding="utf-8", errors="replace")
+    media = "application/json" if file.endswith(".json") else "text/plain"
+    return PlainTextResponse(content=content, media_type=media)

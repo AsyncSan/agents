@@ -1,0 +1,39 @@
+id: code-review-python
+name: Python Code Review Agent
+description: Reviews Python code for bugs, style issues, and security vulnerabilities
+domain: development
+tags:
+  - python
+  - code-review
+  - security
+inputs:
+  - name: repo_url
+    type: string
+    required: true
+  - name: branch
+    type: string
+    required: false
+    default: main
+outputs:
+  - name: output.md
+    type: markdown
+    guaranteed: true
+runtime:
+  snapshot_profile: base
+  server_type: cax11
+  model: anthropic/claude-sonnet-4-6
+  tools:
+    - shell
+  estimated_duration_seconds: 120
+  estimated_cost_usd: 0.30
+pricing:
+  model: per_execution
+  base_price_usd: 0.50
+constraints:
+  timeout_max: 600
+instructions: |
+  You are a Python code review agent. Clone the repository at ${repo_url}
+  (branch: ${branch}) and perform a thorough code review.
+
+  Focus on: bugs, security issues, style problems, type errors.
+  Output a structured markdown report to /workspace/agents/$RUN_ID/output.md.

@@ -2,7 +2,7 @@
 
 import uuid
 
-from sqlalchemy import ForeignKey, String, Text
+from sqlalchemy import ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -23,9 +23,25 @@ class Task(Base, TimestampMixin):
     constraints: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     status: Mapped[str] = mapped_column(
         String(50), default="pending"
-    )  # pending, dispatching, running, completed, failed
+    )  # pending, authorized, dispatching, running, completed, failed
     callback_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # Payment tracking
+    payment_intent_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    payment_status: Mapped[str | None] = mapped_column(
+        String(50), nullable=True
+    )  # authorized, captured, cancelled, refunded
+    amount_authorized_cents: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    amount_captured_cents: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    platform_fee_cents: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    # Pipeline support
+    pipeline_id: Mapped[str | None] = mapped_column(
+        String(255), ForeignKey("pipelines.id"), nullable=True
+    )
+    step_index: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     consumer = relationship("Consumer", back_populates="tasks")
     agent = relationship("Agent", back_populates="tasks")
     executions = relationship("Execution", back_populates="task", lazy="selectin")
+    pipeline = relationship("Pipeline", back_populates="tasks")

@@ -21,10 +21,18 @@ class Agent(Base, TimestampMixin):
     card: Mapped[dict] = mapped_column(JSONB, nullable=False)  # full AgentCapabilityCard
     status: Mapped[str] = mapped_column(String(50), default="active")
 
+    # Ed25519 signature of the canonical card (hex)
+    signature: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # Versioning
+    version: Mapped[int] = mapped_column(Integer, default=1)
+
     # Trust metrics (platform-computed)
     trust_score: Mapped[float | None] = mapped_column(Numeric(5, 2), nullable=True)
     total_executions: Mapped[int] = mapped_column(Integer, default=0)
     success_count: Mapped[int] = mapped_column(Integer, default=0)
+    avg_duration_seconds: Mapped[float | None] = mapped_column(Numeric(10, 2), nullable=True)
 
     provider = relationship("Provider", back_populates="agents")
     tasks = relationship("Task", back_populates="agent", lazy="selectin")
+    versions = relationship("AgentVersion", back_populates="agent", lazy="noload")

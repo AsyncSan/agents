@@ -23,8 +23,22 @@ log = logging.getLogger("agentforge.dispatch")
 
 @dataclass
 class SecretSet:
-    """A set of secrets to inject into an ephemeral server."""
-    api_keys: dict[str, str]  # env var name -> value (e.g. ANTHROPIC_API_KEY -> sk-...)
+    """Isolated secrets for an ephemeral server execution.
+
+    Consumer secrets: API keys the task submitter wants available (e.g. their own OpenAI key).
+    Provider secrets: API keys the agent developer provides (e.g. their Anthropic key).
+    Platform secrets: Platform-level keys (e.g. gateway tokens).
+
+    On the ephemeral server:
+      /workspace/secrets/consumer/api-keys.env  (consumer's keys)
+      /workspace/secrets/provider/api-keys.env  (provider's keys)
+      /workspace/secrets/api-keys.env           (merged, backward compat)
+
+    No key ever crosses tenant boundaries. All destroyed with server.
+    """
+    consumer_keys: dict[str, str] | None = None
+    provider_keys: dict[str, str] | None = None
+    platform_keys: dict[str, str] | None = None
     gh_token: str | None = None
 
 
@@ -58,6 +72,7 @@ class AgentForgeDispatcher:
         task_inputs: dict,
         run_id: str | None = None,
         secrets: SecretSet | None = None,
+        task_timeout: int | None = None,
     ) -> DispatchResult:
         """Execute full dispatch pipeline for a task.
 
@@ -66,6 +81,7 @@ class AgentForgeDispatcher:
             task_inputs: Consumer-provided inputs
             run_id: Unique run identifier (auto-generated if None)
             secrets: API keys and credentials to inject
+            task_timeout: Override timeout from task constraints (seconds)
         """
         task_id = agent_card["meta"]["id"]
         run_id = run_id or self.generate_run_id(task_id)
@@ -75,9 +91,14 @@ class AgentForgeDispatcher:
         snapshot_profile = runtime.get("snapshot_profile", "base")
         server_type = runtime.get("server_type")
         model = runtime.get("model", "anthropic/claude-sonnet-4-6")
-        timeout = agent_card.get("capabilities", {}).get("constraints", {}).get(
-            "timeout_max", 1800
-        )
+
+        # Use task-level timeout if provided, else fall back to agent card
+        if task_timeout:
+            timeout = task_timeout
+        else:
+            timeout = agent_card.get("capabilities", {}).get("constraints", {}).get(
+                "timeout_max", 1800
+            )
         timeout = min(timeout, 7200)
 
         server = None
@@ -154,28 +175,48 @@ class AgentForgeDispatcher:
     def _inject_secrets(self, server: ServerInfo, secrets: SecretSet | None) -> None:
         """Inject secrets into ephemeral server. Core of the Secret Brokerage.
 
-        Secrets are written to /workspace/secrets/ on the ephemeral server.
-        They exist only in memory/disk of this server and are destroyed when
-        the server is destroyed. The delegating agent's keys never leave the platform.
+        Three isolated directories:
+          /workspace/secrets/consumer/  (task submitter's keys)
+          /workspace/secrets/provider/  (agent developer's keys)
+          /workspace/secrets/           (merged env, backward compat)
+
+        All destroyed when the server is destroyed. No key crosses tenant boundaries.
         """
-        self.compute.ssh(server, "mkdir -p /workspace/secrets", check=False)
+        self.compute.ssh(
+            server,
+            "mkdir -p /workspace/secrets/consumer /workspace/secrets/provider",
+            check=False,
+        )
 
         if not secrets:
             return
 
-        # Write API keys as env file
-        env_lines = []
-        for key, value in secrets.api_keys.items():
-            env_lines.append(f"{key}={value}")
+        all_keys: dict[str, str] = {}
 
-        if env_lines:
-            env_content = "\n".join(env_lines)
-            self.compute.ssh(
-                server,
-                f'cat > /workspace/secrets/api-keys.env << "ENVEOF"\n{env_content}\nENVEOF\n'
-                f"chmod 600 /workspace/secrets/api-keys.env",
+        # Consumer secrets (isolated)
+        if secrets.consumer_keys:
+            self._write_env_file(
+                server, "/workspace/secrets/consumer/api-keys.env", secrets.consumer_keys
             )
-            log.info(f"Injected {len(env_lines)} API keys")
+            all_keys.update(secrets.consumer_keys)
+            log.info(f"Injected {len(secrets.consumer_keys)} consumer secrets")
+
+        # Provider secrets (isolated)
+        if secrets.provider_keys:
+            self._write_env_file(
+                server, "/workspace/secrets/provider/api-keys.env", secrets.provider_keys
+            )
+            all_keys.update(secrets.provider_keys)
+            log.info(f"Injected {len(secrets.provider_keys)} provider secrets")
+
+        # Platform secrets
+        if secrets.platform_keys:
+            all_keys.update(secrets.platform_keys)
+            log.info(f"Injected {len(secrets.platform_keys)} platform secrets")
+
+        # Merged env for backward compatibility (runner sources this)
+        if all_keys:
+            self._write_env_file(server, "/workspace/secrets/api-keys.env", all_keys)
 
         # Git credentials
         if secrets.gh_token:
@@ -188,6 +229,22 @@ class AgentForgeDispatcher:
                 check=False,
             )
             log.info("Injected git credentials")
+
+    def _write_env_file(self, server: ServerInfo, path: str, keys: dict[str, str]) -> None:
+        """Write a dict of key-value pairs as an env file on the server.
+
+        Uses base64 encoding to prevent shell injection via newlines or
+        special characters in secret values.
+        """
+        import base64
+
+        env_lines = [f"{k}={v}" for k, v in keys.items()]
+        env_content = "\n".join(env_lines)
+        b64 = base64.b64encode(env_content.encode()).decode()
+        self.compute.ssh(
+            server,
+            f"echo '{b64}' | base64 -d > {path} && chmod 600 {path}",
+        )
 
     def _execute_task(
         self,
