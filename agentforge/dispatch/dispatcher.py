@@ -264,6 +264,10 @@ class AgentForgeDispatcher:
             instructions = instructions.replace(f"{{{{{key}}}}}", str(value))
             instructions = instructions.replace(f"${{{key}}}", str(value))
 
+        # Substitute runtime variables
+        instructions = instructions.replace("$RUN_ID", run_id)
+        instructions = instructions.replace("${RUN_ID}", run_id)
+
         # Create workspace
         self.compute.ssh(server, f"mkdir -p /workspace/agents/{run_id}")
 
@@ -316,6 +320,7 @@ class AgentForgeDispatcher:
 set -euo pipefail
 source /workspace/secrets/api-keys.env 2>/dev/null || true
 export DISPLAY=:99 2>/dev/null || true
+export RUN_ID="{run_id}"
 
 # Inject API key into OpenClaw auth-profiles if ANTHROPIC_API_KEY is set
 if [ -n "${{ANTHROPIC_API_KEY:-}}" ]; then
