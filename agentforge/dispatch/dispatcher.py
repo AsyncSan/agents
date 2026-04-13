@@ -359,8 +359,8 @@ else
     echo "Exit code: $EXIT_CODE" >> "$OUTFILE"
 fi
 
-# Collect workspace files
-for f in /workspace/output.md /workspace/screenshots/*.png; do
+# Collect workspace files (check multiple locations where agents write output)
+for f in /workspace/output.md /workspace/screenshots/*.png /root/.openclaw/workspace/output.md /root/output.md; do
     [ -e "$f" ] && cp -n "$f" /workspace/agents/{run_id}/ 2>/dev/null
 done
 
