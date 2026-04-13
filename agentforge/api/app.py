@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from agentforge.api.routes_agents import router as agents_router
 from agentforge.api.routes_auth import router as auth_router
 from agentforge.api.routes_dashboard import router as dashboard_router
+from agentforge.api.routes_me import router as me_router
 from agentforge.api.routes_payment import router as payment_router
 from agentforge.api.routes_pipelines import router as pipelines_router
 from agentforge.api.routes_platform import router as platform_router
@@ -83,6 +84,7 @@ app.include_router(ratings_router)
 app.include_router(payment_router)
 app.include_router(schedules_router)
 app.include_router(dashboard_router)
+app.include_router(me_router)
 
 
 @app.get("/healthz")

@@ -53,21 +53,35 @@ def logout():
 
 @app.command()
 def whoami():
-    """Show current authentication status."""
+    """Show current authentication status and account summary."""
     key = get_api_key()
     if not key:
         console.print("[red]Not logged in.[/red] Run: agentforge login")
         raise typer.Exit(1)
-    console.print(f"Endpoint: {get_endpoint()}")
-    console.print(f"API Key: {key[:8]}...{key[-4:]}")
 
-    # Verify by hitting a protected endpoint
     client = get_client()
-    resp = client.get("/v1/tasks?limit=0")
-    if resp.status_code == 200:
-        console.print("[green]Authenticated.[/green]")
-    else:
+    resp = client.get("/v1/me")
+    if resp.status_code != 200:
+        console.print(f"Endpoint: {get_endpoint()}")
+        console.print(f"API Key: {key[:8]}...{key[-4:]}")
         console.print(f"[red]Auth failed ({resp.status_code})[/red]")
+        raise typer.Exit(1)
+
+    me = resp.json()
+    console.print(f"\n[bold]{me['name']}[/bold] ({me['role']})")
+    console.print(f"Email: {me['email']}")
+    console.print(f"Endpoint: {get_endpoint()}")
+    console.print(f"Secrets: {me['secrets_count']}")
+    console.print(f"Webhooks: {me['webhooks_count']}")
+    console.print(f"Tasks: {me['tasks_count']}")
+    if me.get("schedules_count") is not None:
+        console.print(f"Schedules: {me['schedules_count']}")
+    if me.get("agents_count") is not None:
+        console.print(f"Agents: {me['agents_count']}")
+    stripe_status = (
+        "[green]configured[/green]" if me["stripe_configured"] else "[yellow]not set up[/yellow]"
+    )
+    console.print(f"Payments: {stripe_status}")
 
 
 # --- Agents ---
