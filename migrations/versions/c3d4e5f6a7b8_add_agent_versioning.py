@@ -20,8 +20,13 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # Add version column to agents
-    op.add_column('agents', sa.Column('version', sa.Integer(), server_default='1', nullable=False))
+    # Add version column to agents (skip if already exists, e.g. manual migration)
+    from sqlalchemy import inspect as sa_inspect
+    conn = op.get_bind()
+    inspector = sa_inspect(conn)
+    existing = [c["name"] for c in inspector.get_columns("agents")]
+    if "version" not in existing:
+        op.add_column('agents', sa.Column('version', sa.Integer(), server_default='1', nullable=False))
 
     # Create agent_versions table
     op.create_table(
