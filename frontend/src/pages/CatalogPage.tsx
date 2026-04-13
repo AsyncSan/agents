@@ -51,17 +51,18 @@ export function CatalogPage() {
 
         <div className="text-center max-w-2xl mx-auto">
           <h1 className="text-3xl sm:text-5xl font-semibold text-[#f1f5f9] mb-5 leading-[1.15] tracking-tight">
-            Run AI agents on<br />
-            <span className="text-[#00d4ff]">isolated compute.</span>
+            Your codebase, audited<br />
+            <span className="text-[#00d4ff]">every Monday.</span>
           </h1>
 
           <p className="text-[16px] text-[#94a3b8] leading-relaxed mb-4 max-w-lg mx-auto">
-            Submit tasks to specialized agents. Each execution runs on a fresh server
-            with secret isolation, trust scoring, and automatic teardown.
+            Automated security audits on EU-hosted infrastructure.
+            Each run on a fresh server, secrets isolated, results documented.
+            GDPR compliant. SOC 2 ready audit trail.
           </p>
 
           <p className="text-[22px] font-semibold text-[#f1f5f9] mb-8">
-            From <span className="text-[#00d4ff]">$2/execution</span>
+            From <span className="text-[#00d4ff]">$8/month</span>
           </p>
 
           <div className="flex items-center justify-center gap-3 mb-6">
@@ -81,12 +82,17 @@ export function CatalogPage() {
             </a>
           </div>
 
-          <p className="text-xs text-[#64748b]">
-            EU-hosted (Germany) · Open source
-            <a href="https://github.com/mylilcrowdi/agents" target="_blank" rel="noopener" className="text-[#94a3b8] hover:text-[#f1f5f9] ml-1 no-underline">
-              (GitHub) <ExternalLink size={10} className="inline" />
+          <div className="flex items-center justify-center gap-4 text-xs text-[#64748b]">
+            <span className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+              EU-hosted (Hetzner, Germany)
+            </span>
+            <span>GDPR compliant</span>
+            <span>No CLOUD Act exposure</span>
+            <a href="https://github.com/mylilcrowdi/agents" target="_blank" rel="noopener" className="text-[#94a3b8] hover:text-[#f1f5f9] no-underline">
+              Open source <ExternalLink size={10} className="inline" />
             </a>
-          </p>
+          </div>
         </div>
       </section>
 
@@ -111,70 +117,70 @@ export function CatalogPage() {
         </div>
       </section>
 
-      {/* Sample: Competitor Analysis Result */}
+      {/* Sample: Security Audit Report */}
       <section id="sample-report" className="mb-20 scroll-mt-20">
         <div className="rounded-xl border border-[#00d4ff]/10 bg-[#111118] p-6">
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-2">
-              <Search size={16} className="text-[#00d4ff]" />
-              <h2 className="text-sm font-medium text-[#f1f5f9]">Sample: Competitor Analysis Result</h2>
+              <Shield size={16} className="text-[#00d4ff]" />
+              <h2 className="text-sm font-medium text-[#f1f5f9]">Sample: Weekly Security Audit</h2>
             </div>
-            <span className="text-xs text-[#64748b]">Completed in 6m 32s on isolated cax11</span>
+            <span className="text-xs text-[#64748b]">Completed in 2m 42s on isolated cax11 (Hetzner, Germany)</span>
           </div>
 
           <div className="bg-[#0a0a0f] rounded-lg p-5 font-mono text-xs leading-relaxed overflow-x-auto">
-            <div className="text-[#64748b] mb-4"># Market Competitor Analysis</div>
-            <div className="text-[#94a3b8] mb-1"><span className="text-[#64748b]">Product:</span> acme-saas.com</div>
-            <div className="text-[#94a3b8] mb-1"><span className="text-[#64748b]">Market:</span> Developer productivity tools</div>
-            <div className="text-[#94a3b8] mb-4"><span className="text-[#64748b]">Date:</span> 2026-04-13 14:22 UTC</div>
+            <div className="text-[#64748b] mb-4"># Security Audit Report</div>
+            <div className="text-[#94a3b8] mb-1"><span className="text-[#64748b]">Repository:</span> github.com/acme/backend</div>
+            <div className="text-[#94a3b8] mb-1"><span className="text-[#64748b]">Branch:</span> main</div>
+            <div className="text-[#94a3b8] mb-4"><span className="text-[#64748b]">Date:</span> 2026-04-14 09:04 UTC</div>
 
-            <div className="text-[#f1f5f9] mb-3">## Key Findings</div>
+            <div className="text-[#f1f5f9] mb-3">## Executive Summary</div>
             <div className="grid grid-cols-4 gap-2 mb-5">
-              <div className="bg-[#00d4ff]/10 border border-[#00d4ff]/20 rounded-lg p-3 text-center">
-                <div className="text-[#00d4ff] text-lg font-bold">12</div>
-                <div className="text-[#00d4ff]/70 text-[10px]">Competitors</div>
+              <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-center">
+                <div className="text-red-400 text-lg font-bold">3</div>
+                <div className="text-red-400/70 text-[10px]">Critical</div>
               </div>
-              <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3 text-center">
-                <div className="text-emerald-400 text-lg font-bold">3</div>
-                <div className="text-emerald-400/70 text-[10px]">Market Gaps</div>
+              <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-3 text-center">
+                <div className="text-orange-400 text-lg font-bold">12</div>
+                <div className="text-orange-400/70 text-[10px]">High</div>
               </div>
               <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 text-center">
-                <div className="text-amber-400 text-lg font-bold">$12B</div>
-                <div className="text-amber-400/70 text-[10px]">TAM 2026</div>
+                <div className="text-amber-400 text-lg font-bold">47</div>
+                <div className="text-amber-400/70 text-[10px]">Medium</div>
               </div>
-              <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-3 text-center">
-                <div className="text-purple-400 text-lg font-bold">4</div>
-                <div className="text-purple-400/70 text-[10px]">SWOT Reports</div>
+              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 text-center">
+                <div className="text-blue-400 text-lg font-bold">8</div>
+                <div className="text-blue-400/70 text-[10px]">Low</div>
               </div>
             </div>
 
-            <div className="text-[#f1f5f9] mb-2">## Top Competitors</div>
+            <div className="text-[#f1f5f9] mb-2">## Critical Findings</div>
             <div className="space-y-2 mb-4">
               <div className="text-[#94a3b8]">
-                <span className="text-[#00d4ff]">[1]</span> <span className="text-[#f1f5f9]">CompetitorA</span>
-                <span className="text-[#64748b]"> — $49/mo, 12K users, strong in CI/CD. Weak: no EU hosting, no audit trail.</span>
+                <span className="text-red-400">[CRITICAL]</span> CVE-2026-1234 in <span className="text-[#f1f5f9]">express@4.17.1</span>
+                <span className="text-[#64748b]"> — Prototype pollution. Fix: upgrade to 4.21.0+</span>
               </div>
               <div className="text-[#94a3b8]">
-                <span className="text-[#00d4ff]">[2]</span> <span className="text-[#f1f5f9]">CompetitorB</span>
-                <span className="text-[#64748b]"> — $29/mo, open source core. Series A ($8M). Gap: no agent marketplace.</span>
+                <span className="text-red-400">[CRITICAL]</span> Exposed AWS key in <span className="text-[#f1f5f9]">src/config/aws.ts:14</span>
+                <span className="text-[#64748b]"> — AKIA****REDACTED. Rotate immediately.</span>
               </div>
               <div className="text-[#94a3b8]">
-                <span className="text-[#00d4ff]">[3]</span> <span className="text-[#f1f5f9]">CompetitorC</span>
-                <span className="text-[#64748b]"> — Enterprise only, SOC2. $500/mo min. Opportunity: underserved SMB segment.</span>
+                <span className="text-red-400">[CRITICAL]</span> SQL injection in <span className="text-[#f1f5f9]">src/api/users.ts:87</span>
+                <span className="text-[#64748b]"> — Unsanitized input in raw query.</span>
               </div>
             </div>
 
-            <div className="text-[#64748b] mt-4">... full report with pricing matrix, SWOT, and positioning recommendations</div>
+            <div className="text-[#64748b] mt-4">... 67 more findings in full report</div>
           </div>
 
           <div className="flex items-center justify-between mt-4">
             <div className="flex items-center gap-4 text-xs text-[#64748b]">
-              <span className="flex items-center gap-1"><Clock size={12} /> 6m 32s</span>
+              <span className="flex items-center gap-1"><Clock size={12} /> 2m 42s</span>
               <span className="flex items-center gap-1"><Server size={12} /> cax11 (destroyed)</span>
-              <span>$5.00 per execution</span>
+              <span>$2.00 per execution</span>
             </div>
             <span className="text-xs text-emerald-400 flex items-center gap-1">
-              <CheckCircle size={12} /> Trust score: 0.92
+              <CheckCircle size={12} /> Audit logged, exportable
             </span>
           </div>
         </div>
@@ -183,16 +189,16 @@ export function CatalogPage() {
       {/* How it runs */}
       <section className="mb-20">
         <h2 className="text-xs font-medium text-[#64748b] uppercase tracking-widest mb-6 text-center">
-          What happens when you submit a task
+          What happens every Monday at 9:00
         </h2>
         <div className="rounded-xl border border-white/[0.06] bg-[#111118] p-6">
           <div className="space-y-3">
             {[
-              { time: "T+0s", event: "Task submitted. Payment authorized. Ephemeral server provisioned from snapshot.", icon: Calendar },
-              { time: "T+20s", event: "Server ready. Consumer and provider secrets injected (isolated paths).", icon: Lock },
-              { time: "T+25s", event: "Agent starts executing. Web research, analysis, report generation.", icon: Terminal },
-              { time: "T+6m", event: "Agent completes. Structured markdown report collected.", icon: FileCheck },
-              { time: "T+6m 15s", event: "Results delivered. Payment captured. Server destroyed. Trust score updated.", icon: Shield },
+              { time: "09:00:00", event: "Schedule triggers. Fresh cax11 server provisioned on Hetzner (Nuremberg, Germany).", icon: Calendar },
+              { time: "09:00:22", event: "Server ready. Secrets injected (base64, per-tenant isolation). Repo cloned.", icon: Lock },
+              { time: "09:01:15", event: "Security scans running: npm audit, pip-audit, secret patterns, unsafe code.", icon: Terminal },
+              { time: "09:02:42", event: "Report compiled. 3 critical, 12 high, 47 medium. Delivered via Slack webhook.", icon: FileCheck },
+              { time: "09:02:55", event: "Results collected. $2.00 captured. Server destroyed. Audit trail logged.", icon: Shield },
             ].map(({ time, event, icon: Icon }) => (
               <div key={time} className="flex items-start gap-4">
                 <span className="text-[#00d4ff] font-mono text-xs w-16 shrink-0 pt-0.5">{time}</span>
