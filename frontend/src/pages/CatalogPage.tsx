@@ -62,7 +62,7 @@ export function CatalogPage() {
           </p>
 
           <p className="text-[22px] font-semibold text-[#f1f5f9] mb-8">
-            From <span className="text-[#00d4ff]">$8/month</span>
+            From <span className="text-[#00d4ff]">$29/month</span>
           </p>
 
           <div className="flex items-center justify-center gap-3 mb-6">
@@ -277,48 +277,63 @@ export function CatalogPage() {
       {/* Pricing */}
       <section className="mb-20">
         <h2 className="text-xs font-medium text-[#64748b] uppercase tracking-widest mb-6 text-center">
-          Pay per execution. No subscriptions.
+          Pricing
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-4xl mx-auto">
           <div className="rounded-xl border border-white/[0.06] bg-[#111118] p-5">
-            <h3 className="text-sm font-medium text-[#f1f5f9] mb-1">Consumer</h3>
-            <div className="text-2xl font-bold text-[#f1f5f9] mb-1">$2-5<span className="text-sm font-normal text-[#64748b]">/task</span></div>
-            <p className="text-xs text-[#64748b] mb-4">Submit tasks, get results</p>
+            <h3 className="text-sm font-medium text-[#f1f5f9] mb-1">Starter</h3>
+            <div className="text-2xl font-bold text-[#f1f5f9] mb-1">$29<span className="text-sm font-normal text-[#64748b]">/mo</span></div>
+            <p className="text-xs text-[#64748b] mb-4">1 repo, weekly audits</p>
             <ul className="space-y-2 text-xs text-[#94a3b8]">
-              <li className="flex items-center gap-2"><CheckCircle size={12} className="text-emerald-400" /> All-inclusive (compute + LLM)</li>
-              <li className="flex items-center gap-2"><CheckCircle size={12} className="text-emerald-400" /> Structured markdown results</li>
-              <li className="flex items-center gap-2"><CheckCircle size={12} className="text-emerald-400" /> Secret isolation per task</li>
-              <li className="flex items-center gap-2"><CheckCircle size={12} className="text-emerald-400" /> Immutable audit trail</li>
+              <li className="flex items-center gap-2"><CheckCircle size={12} className="text-emerald-400" /> 4 audits/month</li>
+              <li className="flex items-center gap-2"><CheckCircle size={12} className="text-emerald-400" /> 1 scheduled agent</li>
+              <li className="flex items-center gap-2"><CheckCircle size={12} className="text-emerald-400" /> Slack/webhook delivery</li>
+              <li className="flex items-center gap-2"><CheckCircle size={12} className="text-emerald-400" /> EU-hosted execution</li>
             </ul>
           </div>
 
           <div className="rounded-xl border border-[#00d4ff]/20 bg-[#111118] p-5 relative">
             <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-[#00d4ff] text-[#0a0a0f] text-[10px] font-medium rounded-full">
-              Earn revenue
+              Most popular
             </div>
-            <h3 className="text-sm font-medium text-[#f1f5f9] mb-1">Provider</h3>
-            <div className="text-2xl font-bold text-[#f1f5f9] mb-1">80%<span className="text-sm font-normal text-[#64748b]"> of price</span></div>
-            <p className="text-xs text-[#64748b] mb-4">Publish agents, earn per execution</p>
+            <h3 className="text-sm font-medium text-[#f1f5f9] mb-1">Pro</h3>
+            <div className="text-2xl font-bold text-[#f1f5f9] mb-1">$99<span className="text-sm font-normal text-[#64748b]">/mo</span></div>
+            <p className="text-xs text-[#64748b] mb-4">Up to 5 repos, daily</p>
             <ul className="space-y-2 text-xs text-[#94a3b8]">
-              <li className="flex items-center gap-2"><CheckCircle size={12} className="text-emerald-400" /> Set your own price</li>
-              <li className="flex items-center gap-2"><CheckCircle size={12} className="text-emerald-400" /> 20% platform fee</li>
-              <li className="flex items-center gap-2"><CheckCircle size={12} className="text-emerald-400" /> Trust score builds reputation</li>
-              <li className="flex items-center gap-2"><CheckCircle size={12} className="text-emerald-400" /> Ed25519 signed agent cards</li>
+              <li className="flex items-center gap-2"><CheckCircle size={12} className="text-emerald-400" /> 20 audits/month</li>
+              <li className="flex items-center gap-2"><CheckCircle size={12} className="text-emerald-400" /> 5 scheduled agents</li>
+              <li className="flex items-center gap-2"><CheckCircle size={12} className="text-emerald-400" /> Cost dashboard</li>
+              <li className="flex items-center gap-2"><CheckCircle size={12} className="text-emerald-400" /> Compliance export (CSV/JSON)</li>
             </ul>
           </div>
 
           <div className="rounded-xl border border-white/[0.06] bg-[#111118] p-5">
-            <h3 className="text-sm font-medium text-[#f1f5f9] mb-1">Volume</h3>
-            <div className="text-2xl font-bold text-[#f1f5f9] mb-1">10-15%<span className="text-sm font-normal text-[#64748b]"> fee</span></div>
-            <p className="text-xs text-[#64748b] mb-4">High-volume providers</p>
+            <h3 className="text-sm font-medium text-[#f1f5f9] mb-1">Team</h3>
+            <div className="text-2xl font-bold text-[#f1f5f9] mb-1">$249<span className="text-sm font-normal text-[#64748b]">/mo</span></div>
+            <p className="text-xs text-[#64748b] mb-4">Multi-repo, multi-agent</p>
             <ul className="space-y-2 text-xs text-[#94a3b8]">
-              <li className="flex items-center gap-2"><CheckCircle size={12} className="text-emerald-400" /> 15% fee at $5K/mo GMV</li>
-              <li className="flex items-center gap-2"><CheckCircle size={12} className="text-emerald-400" /> 10% fee at $25K/mo GMV</li>
-              <li className="flex items-center gap-2"><CheckCircle size={12} className="text-emerald-400" /> Priority dispatch</li>
-              <li className="flex items-center gap-2"><CheckCircle size={12} className="text-emerald-400" /> Compliance export (JSON/CSV)</li>
+              <li className="flex items-center gap-2"><CheckCircle size={12} className="text-emerald-400" /> 60 audits/month</li>
+              <li className="flex items-center gap-2"><CheckCircle size={12} className="text-emerald-400" /> 20 scheduled agents</li>
+              <li className="flex items-center gap-2"><CheckCircle size={12} className="text-emerald-400" /> Webhook event subscriptions</li>
+              <li className="flex items-center gap-2"><CheckCircle size={12} className="text-emerald-400" /> SOC 2 ready audit trail</li>
+            </ul>
+          </div>
+
+          <div className="rounded-xl border border-white/[0.06] bg-[#111118] p-5">
+            <h3 className="text-sm font-medium text-[#f1f5f9] mb-1">Enterprise</h3>
+            <div className="text-2xl font-bold text-[#f1f5f9] mb-1">Custom</div>
+            <p className="text-xs text-[#64748b] mb-4">Regulated industries</p>
+            <ul className="space-y-2 text-xs text-[#94a3b8]">
+              <li className="flex items-center gap-2"><CheckCircle size={12} className="text-emerald-400" /> Unlimited audits</li>
+              <li className="flex items-center gap-2"><CheckCircle size={12} className="text-emerald-400" /> Custom agents</li>
+              <li className="flex items-center gap-2"><CheckCircle size={12} className="text-emerald-400" /> SSO + RBAC</li>
+              <li className="flex items-center gap-2"><CheckCircle size={12} className="text-emerald-400" /> Dedicated support</li>
             </ul>
           </div>
         </div>
+        <p className="text-center text-xs text-[#64748b] mt-4">
+          All plans include EU-hosted execution, secret isolation, and immutable audit trail. 14-day free trial.
+        </p>
       </section>
 
       {/* Get Started */}
