@@ -67,18 +67,18 @@ export function CatalogPage() {
 
           <div className="flex items-center justify-center gap-3 mb-6">
             <a
-              href="#agents"
+              href="#sample-report"
               className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-[#00d4ff] text-[#0a0a0f] text-sm font-medium no-underline"
               style={{ transition: "background 0.2s cubic-bezier(0.16, 1, 0.3, 1)" }}
             >
-              Browse agents
+              See a sample report
               <ArrowRight size={14} />
             </a>
             <a
-              href="#how-it-works"
+              href="#get-started"
               className="inline-flex items-center gap-2 px-6 py-3 rounded-lg border border-white/[0.08] text-sm text-[#94a3b8] hover:text-[#f1f5f9] hover:border-white/[0.15] no-underline transition-colors"
             >
-              How it works
+              Get started
             </a>
           </div>
 
@@ -123,16 +123,16 @@ export function CatalogPage() {
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-2">
               <Shield size={16} className="text-[#00d4ff]" />
-              <h2 className="text-sm font-medium text-[#f1f5f9]">Sample: Weekly Security Audit</h2>
+              <h2 className="text-sm font-medium text-[#f1f5f9]">Real output: OWASP Juice Shop Audit</h2>
             </div>
-            <span className="text-xs text-[#64748b]">Completed in 2m 42s on isolated cax11 (Hetzner, Germany)</span>
+            <span className="text-xs text-[#64748b]">5m 11s on isolated cax11 (Hetzner Nuremberg)</span>
           </div>
 
           <div className="bg-[#0a0a0f] rounded-lg p-5 font-mono text-xs leading-relaxed overflow-x-auto">
-            <div className="text-[#64748b] mb-4"># Security Audit Report</div>
-            <div className="text-[#94a3b8] mb-1"><span className="text-[#64748b]">Repository:</span> github.com/acme/backend</div>
-            <div className="text-[#94a3b8] mb-1"><span className="text-[#64748b]">Branch:</span> main</div>
-            <div className="text-[#94a3b8] mb-4"><span className="text-[#64748b]">Date:</span> 2026-04-14 09:04 UTC</div>
+            <div className="text-[#64748b] mb-4"># Security Audit Report: OWASP Juice Shop v19.2.1</div>
+            <div className="text-[#94a3b8] mb-1"><span className="text-[#64748b]">Repository:</span> github.com/juice-shop/juice-shop</div>
+            <div className="text-[#94a3b8] mb-1"><span className="text-[#64748b]">Branch:</span> master</div>
+            <div className="text-[#94a3b8] mb-4"><span className="text-[#64748b]">Date:</span> 2026-04-13 14:12 UTC</div>
 
             <div className="text-[#f1f5f9] mb-3">## Executive Summary</div>
             <div className="grid grid-cols-4 gap-2 mb-5">
@@ -141,15 +141,15 @@ export function CatalogPage() {
                 <div className="text-red-400/70 text-[10px]">Critical</div>
               </div>
               <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-3 text-center">
-                <div className="text-orange-400 text-lg font-bold">12</div>
+                <div className="text-orange-400 text-lg font-bold">4</div>
                 <div className="text-orange-400/70 text-[10px]">High</div>
               </div>
               <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 text-center">
-                <div className="text-amber-400 text-lg font-bold">47</div>
+                <div className="text-amber-400 text-lg font-bold">3</div>
                 <div className="text-amber-400/70 text-[10px]">Medium</div>
               </div>
               <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 text-center">
-                <div className="text-blue-400 text-lg font-bold">8</div>
+                <div className="text-blue-400 text-lg font-bold">2</div>
                 <div className="text-blue-400/70 text-[10px]">Low</div>
               </div>
             </div>
@@ -157,27 +157,44 @@ export function CatalogPage() {
             <div className="text-[#f1f5f9] mb-2">## Critical Findings</div>
             <div className="space-y-2 mb-4">
               <div className="text-[#94a3b8]">
-                <span className="text-red-400">[CRITICAL]</span> CVE-2026-1234 in <span className="text-[#f1f5f9]">express@4.17.1</span>
-                <span className="text-[#64748b]"> — Prototype pollution. Fix: upgrade to 4.21.0+</span>
+                <span className="text-red-400">[CRITICAL]</span> Hardcoded RSA private key in <span className="text-[#f1f5f9]">lib/insecurity.ts:25</span>
+                <span className="text-[#64748b]"> — JWT signing key in source. Complete auth bypass.</span>
               </div>
               <div className="text-[#94a3b8]">
-                <span className="text-red-400">[CRITICAL]</span> Exposed AWS key in <span className="text-[#f1f5f9]">src/config/aws.ts:14</span>
-                <span className="text-[#64748b]"> — AKIA****REDACTED. Rotate immediately.</span>
+                <span className="text-red-400">[CRITICAL]</span> Server-side eval() in <span className="text-[#f1f5f9]">routes/userProfile.ts:62</span>
+                <span className="text-[#64748b]"> — User input passed to eval(). Remote Code Execution.</span>
               </div>
               <div className="text-[#94a3b8]">
-                <span className="text-red-400">[CRITICAL]</span> SQL injection in <span className="text-[#f1f5f9]">src/api/users.ts:87</span>
-                <span className="text-[#64748b]"> — Unsanitized input in raw query.</span>
+                <span className="text-red-400">[CRITICAL]</span> eval() in captcha in <span className="text-[#f1f5f9]">routes/captcha.ts:22</span>
+                <span className="text-[#64748b]"> — Expression evaluation via eval(). Potential RCE.</span>
+              </div>
+            </div>
+            <div className="text-[#f1f5f9] mb-2 mt-4">## High Findings</div>
+            <div className="space-y-2 mb-4">
+              <div className="text-[#94a3b8]">
+                <span className="text-orange-400">[HIGH]</span> Weak sanitization in <span className="text-[#f1f5f9]">lib/insecurity.ts:61</span>
+                <span className="text-[#64748b]"> — Trivial regex bypass. Persistent XSS via username.</span>
+              </div>
+              <div className="text-[#94a3b8]">
+                <span className="text-orange-400">[HIGH]</span> Permissive CORS in <span className="text-[#f1f5f9]">server.ts:180</span>
+                <span className="text-[#64748b]"> — Allow all origins. Cross-origin data exfiltration.</span>
               </div>
             </div>
 
-            <div className="text-[#64748b] mt-4">... 67 more findings in full report</div>
+            <div className="text-[#64748b] mt-4">
+              <a href="https://github.com/mylilcrowdi/agents/blob/main/examples/sample-report-juice-shop.md"
+                 target="_blank" rel="noopener"
+                 className="text-[#00d4ff] hover:underline no-underline">
+                View full 128-line report with all 12 findings and recommendations →
+              </a>
+            </div>
           </div>
 
           <div className="flex items-center justify-between mt-4">
             <div className="flex items-center gap-4 text-xs text-[#64748b]">
-              <span className="flex items-center gap-1"><Clock size={12} /> 2m 42s</span>
-              <span className="flex items-center gap-1"><Server size={12} /> cax11 (destroyed)</span>
-              <span>$2.00 per execution</span>
+              <span className="flex items-center gap-1"><Clock size={12} /> 5m 11s</span>
+              <span className="flex items-center gap-1"><Server size={12} /> cax11, Nuremberg (destroyed)</span>
+              <span>$2.00/run, server destroyed after</span>
             </div>
             <span className="text-xs text-emerald-400 flex items-center gap-1">
               <CheckCircle size={12} /> Audit logged, exportable
