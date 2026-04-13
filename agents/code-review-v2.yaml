@@ -1,0 +1,104 @@
+id: code-review-v2
+name: AI Code Review
+description: >
+  Thorough code review for pull requests or entire repositories. Analyzes code quality,
+  architecture, bugs, security issues, performance, and test coverage.
+  Produces PR-style inline comments with severity ratings and fix suggestions.
+  Supports Python, TypeScript, Rust, Go, and Java.
+domain: code-quality
+tags:
+  - code-review
+  - quality
+  - bugs
+  - architecture
+  - python
+  - typescript
+inputs:
+  - name: repo_url
+    type: string
+    required: true
+  - name: branch
+    type: string
+    required: false
+    default: "main"
+  - name: focus
+    type: string
+    required: false
+    default: "bugs,security,performance"
+  - name: compare_branch
+    type: string
+    required: false
+    default: ""
+outputs:
+  - name: output.md
+    type: markdown
+    guaranteed: true
+runtime:
+  snapshot_profile: base
+  server_type: cax11
+  model: anthropic/claude-sonnet-4-6
+  tools:
+    - shell
+  estimated_duration_seconds: 240
+  estimated_cost_usd: 1.00
+pricing:
+  model: per_execution
+  base_price_usd: 3.00
+constraints:
+  timeout_max: 600
+instructions: |
+  You are a code review agent. Review: ${repo_url} (branch: ${branch})
+  Focus: ${focus}. Compare branch: ${compare_branch}
+
+  ## Step 1: Clone and Analyze
+  ```bash
+  git clone ${repo_url} /workspace/repo && cd /workspace/repo
+  git checkout ${branch}
+  ```
+
+  If compare_branch is set, get the diff:
+  ```bash
+  git diff ${compare_branch}...${branch} > /tmp/diff.patch
+  ```
+
+  ## Step 2: Understand the Codebase
+  - Read README, package.json/pyproject.toml, main entry points
+  - Identify the tech stack, frameworks, patterns used
+  - Count lines of code: `find . -name "*.py" -o -name "*.ts" | xargs wc -l`
+
+  ## Step 3: Review
+  For each file/function, check:
+  - **Bugs:** Logic errors, off-by-one, null handling, race conditions
+  - **Security:** Injection, auth bypass, secret exposure, OWASP top 10
+  - **Performance:** N+1 queries, unnecessary allocations, blocking I/O
+  - **Architecture:** Single responsibility, coupling, naming, patterns
+  - **Tests:** Coverage gaps, missing edge cases, flaky patterns
+
+  ## Step 4: Report
+  Write /workspace/agents/$RUN_ID/output.md:
+  ```
+  # Code Review: [repo name]
+
+  ## Summary
+  | Category | Issues | Critical | Suggestions |
+  |----------|--------|----------|-------------|
+
+  ## Findings
+  ### [CRITICAL] file.py:42 — SQL injection in user query
+  ```python
+  # Current (vulnerable)
+  db.execute(f"SELECT * FROM users WHERE id = {user_id}")
+
+  # Suggested fix
+  db.execute("SELECT * FROM users WHERE id = %s", (user_id,))
+  ```
+  **Why:** User input directly interpolated into SQL.
+
+  ### [HIGH] ...
+
+  ## Architecture Notes
+  [Observations about the overall design]
+
+  ## Recommendations
+  [Prioritized action items]
+  ```

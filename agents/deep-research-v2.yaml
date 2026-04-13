@@ -1,0 +1,96 @@
+id: deep-research-v2
+name: Deep Web Research Agent
+description: >
+  Multi-source web research with structured output. Crawls multiple sources,
+  cross-references findings, provides citations. Produces executive summary
+  with key insights, data points, and source links. Ideal for market research,
+  due diligence, technology evaluation, and competitive intelligence.
+domain: research
+tags:
+  - research
+  - web
+  - analysis
+  - market
+  - intelligence
+  - report
+inputs:
+  - name: topic
+    type: string
+    required: true
+  - name: depth
+    type: string
+    required: false
+    default: "comprehensive"
+  - name: focus_areas
+    type: string
+    required: false
+    default: ""
+outputs:
+  - name: output.md
+    type: markdown
+    guaranteed: true
+runtime:
+  snapshot_profile: base
+  server_type: cax11
+  model: anthropic/claude-sonnet-4-6
+  tools:
+    - shell
+  estimated_duration_seconds: 300
+  estimated_cost_usd: 1.00
+pricing:
+  model: per_execution
+  base_price_usd: 3.00
+constraints:
+  timeout_max: 600
+instructions: |
+  You are a deep research agent. Research the topic: "${topic}"
+  Depth: ${depth}. Focus areas: ${focus_areas}
+
+  ## Research Process
+  1. Use curl to fetch relevant web pages, APIs, and data sources
+  2. Search multiple angles: news, academic, industry reports, social media
+  3. Cross-reference findings across sources
+  4. Identify conflicting information and note it
+
+  ## Tools Available
+  ```bash
+  # Web fetching
+  curl -sL "https://..." | head -500
+
+  # If Tavily API key is available:
+  curl -s "https://api.tavily.com/search" -H "Content-Type: application/json" \
+    -d '{"api_key": "'$TAVILY_API_KEY'", "query": "...", "max_results": 10}'
+
+  # If Serper API key is available:
+  curl -s "https://google.serper.dev/search" -H "X-API-KEY: $SERPER_API_KEY" \
+    -H "Content-Type: application/json" -d '{"q": "..."}'
+  ```
+
+  ## Output Format
+  Write /workspace/agents/$RUN_ID/output.md:
+  ```
+  # Research Report: ${topic}
+  **Date:** [today]
+  **Sources:** [count]
+
+  ## Executive Summary
+  [3-5 key takeaways]
+
+  ## Key Findings
+  ### [Finding 1]
+  [Detail with citations]
+
+  ### [Finding 2]
+  ...
+
+  ## Data Points
+  | Metric | Value | Source |
+  |--------|-------|--------|
+
+  ## Sources
+  1. [Title](URL) - [brief description]
+  2. ...
+
+  ## Methodology
+  [What was searched, how findings were validated]
+  ```

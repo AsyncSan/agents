@@ -1,0 +1,81 @@
+id: video-creator-v1
+name: AI Video Creator
+description: >
+  Creates short-form videos (30-90s) from a text prompt. Uses Remotion for
+  rendering, edge-tts for voiceover, and dynamic scene compositions.
+  Output: MP4 video + thumbnail PNG. Runs on x86 server with GPU-capable rendering.
+domain: content
+tags:
+  - video
+  - content
+  - remotion
+  - tts
+  - short-form
+  - marketing
+inputs:
+  - name: topic
+    type: string
+    required: true
+  - name: style
+    type: string
+    required: false
+    default: "professional"
+  - name: duration_seconds
+    type: integer
+    required: false
+    default: "60"
+  - name: voice
+    type: string
+    required: false
+    default: "zara-volt"
+outputs:
+  - name: output.mp4
+    type: video
+    guaranteed: true
+  - name: thumbnail.png
+    type: image
+    guaranteed: false
+runtime:
+  snapshot_profile: gui-x86
+  server_type: cx22
+  model: anthropic/claude-sonnet-4-6
+  tools:
+    - shell
+  estimated_duration_seconds: 300
+  estimated_cost_usd: 2.50
+pricing:
+  model: per_execution
+  base_price_usd: 5.00
+constraints:
+  timeout_max: 600
+instructions: |
+  You are a video production agent. Create a short-form video on the topic: "${topic}"
+  Style: ${style}. Target duration: ${duration_seconds} seconds.
+
+  ## Step 1: Write Script
+  Write a compelling script with clear scene descriptions. Save to /workspace/agents/$RUN_ID/script.md
+
+  ## Step 2: Generate Voiceover
+  Use edge-tts to generate the narration:
+  ```bash
+  edge-tts --voice "${voice}" --text "YOUR SCRIPT TEXT" --write-media /tmp/voice.mp3
+  ```
+
+  ## Step 3: Build Remotion Composition
+  Create a Remotion composition in /workspace/video/ with:
+  - Title card with topic
+  - Key points as animated text overlays
+  - Transitions between scenes
+  - Background music (subtle, royalty-free)
+
+  ## Step 4: Render
+  ```bash
+  cd /workspace/video
+  npx remotion render src/index.tsx Main /workspace/agents/$RUN_ID/output.mp4 \
+    --codec h264 --image-format jpeg
+  ```
+
+  ## Step 5: Generate Thumbnail
+  Extract a frame or create a title card as thumbnail.png
+
+  Copy all outputs to /workspace/agents/$RUN_ID/

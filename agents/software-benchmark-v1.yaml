@@ -1,0 +1,112 @@
+id: software-benchmark-v1
+name: Software Benchmark Comparison
+description: >
+  Runs real-world benchmarks comparing two software products. Measures startup time,
+  memory usage, throughput, latency, and resource efficiency. Combines quantitative
+  metrics with LLM-powered analysis for context-aware recommendations.
+  Supports CLI tools, web servers, databases, and containerized apps.
+domain: benchmark
+tags:
+  - benchmark
+  - comparison
+  - performance
+  - testing
+  - analysis
+inputs:
+  - name: software_a
+    type: string
+    required: true
+  - name: software_b
+    type: string
+    required: true
+  - name: category
+    type: string
+    required: false
+    default: "general"
+  - name: test_duration_seconds
+    type: integer
+    required: false
+    default: "30"
+outputs:
+  - name: output.md
+    type: markdown
+    guaranteed: true
+  - name: output.json
+    type: json
+    guaranteed: true
+runtime:
+  snapshot_profile: base
+  server_type: cax21
+  model: anthropic/claude-sonnet-4-6
+  tools:
+    - shell
+  estimated_duration_seconds: 240
+  estimated_cost_usd: 1.50
+pricing:
+  model: per_execution
+  base_price_usd: 4.00
+constraints:
+  timeout_max: 600
+instructions: |
+  You are a software benchmarking agent. Compare "${software_a}" vs "${software_b}".
+  Category: ${category}. Run real measurements, not estimates.
+
+  ## Step 1: Install Both
+  Install both tools. Use apt, pip, npm, cargo, or download binaries as appropriate.
+  If one fails to install, document it and compare what you can.
+
+  ## Step 2: Benchmark Suite
+  Run these measurements for BOTH tools:
+
+  **Startup Time** (10 runs, median):
+  ```bash
+  for i in $(seq 1 10); do
+    /usr/bin/time -f "%e" ${software_a} --version 2>&1 | tail -1
+  done
+  ```
+
+  **Memory Usage** (peak RSS):
+  ```bash
+  /usr/bin/time -v ${software_a} [workload] 2>&1 | grep "Maximum resident"
+  ```
+
+  **Throughput** (if applicable, e.g. web servers):
+  ```bash
+  # Start server, then:
+  wrk -t2 -c10 -d${test_duration_seconds}s http://localhost:PORT/
+  # or use hyperfine for CLI tools:
+  hyperfine --warmup 3 '${software_a} [task]' '${software_b} [task]'
+  ```
+
+  **Disk Usage**:
+  ```bash
+  du -sh $(which ${software_a})
+  ```
+
+  ## Step 3: Analysis
+  Analyze the results. Consider:
+  - Which is faster for what use case?
+  - Memory/resource tradeoffs
+  - Ecosystem maturity (docs, community, packages)
+  - When to use which
+
+  ## Step 4: Report
+  Write /workspace/agents/$RUN_ID/output.md:
+  ```
+  # Benchmark: ${software_a} vs ${software_b}
+
+  ## Results Table
+  | Metric | ${software_a} | ${software_b} | Winner |
+  |--------|--------------|--------------|--------|
+  | Startup Time | Xms | Yms | ... |
+  | Memory (RSS) | XMB | YMB | ... |
+  | Throughput | X req/s | Y req/s | ... |
+
+  ## Analysis
+  [Context-aware comparison]
+
+  ## Recommendation
+  [When to use which, based on measured data]
+  ```
+
+  Also write machine-readable /workspace/agents/$RUN_ID/output.json

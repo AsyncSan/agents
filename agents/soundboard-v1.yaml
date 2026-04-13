@@ -1,0 +1,93 @@
+id: soundboard-v1
+name: AI Sound Effects Generator
+description: >
+  Generates custom sound effects from text descriptions using AudioLDM2.
+  Produces high-quality WAV files for games, videos, podcasts, and apps.
+  Evaluates quality with CLAP scoring. Runs on GPU-capable infrastructure.
+domain: content
+tags:
+  - audio
+  - sfx
+  - sound-effects
+  - music
+  - audioldm2
+  - generation
+inputs:
+  - name: prompt
+    type: string
+    required: true
+  - name: duration_seconds
+    type: float
+    required: false
+    default: "5.0"
+  - name: num_variants
+    type: integer
+    required: false
+    default: "3"
+  - name: negative_prompt
+    type: string
+    required: false
+    default: "speech, voice, music, low quality, noise"
+outputs:
+  - name: output.md
+    type: markdown
+    guaranteed: true
+  - name: best.wav
+    type: audio
+    guaranteed: true
+runtime:
+  snapshot_profile: gui-x86
+  server_type: cx22
+  model: anthropic/claude-sonnet-4-6
+  tools:
+    - shell
+  estimated_duration_seconds: 180
+  estimated_cost_usd: 1.50
+pricing:
+  model: per_execution
+  base_price_usd: 3.00
+constraints:
+  timeout_max: 600
+instructions: |
+  You are a sound effects generation agent. Generate SFX for: "${prompt}"
+  Duration: ${duration_seconds}s. Generate ${num_variants} variants and pick the best.
+
+  ## Step 1: Generate Variants
+  Use AudioLDM2 to generate sound effects:
+  ```python
+  import torch
+  from diffusers import AudioLDM2Pipeline
+
+  pipe = AudioLDM2Pipeline.from_pretrained("cvssp/audioldm2", torch_dtype=torch.float16)
+  pipe = pipe.to("cuda" if torch.cuda.is_available() else "cpu")
+
+  for i in range(${num_variants}):
+      audio = pipe(
+          "${prompt}",
+          negative_prompt="${negative_prompt}",
+          num_inference_steps=50,
+          audio_length_in_s=${duration_seconds},
+      ).audios[0]
+      import scipy.io.wavfile
+      scipy.io.wavfile.write(f"/tmp/sfx_variant_{i}.wav", 16000, audio)
+  ```
+
+  ## Step 2: Evaluate with CLAP
+  Score each variant for prompt adherence using CLAP:
+  ```python
+  from transformers import ClapModel, ClapProcessor
+  model = ClapModel.from_pretrained("laion/larger_clap_general")
+  processor = ClapProcessor.from_pretrained("laion/larger_clap_general")
+  # Score each variant against the prompt
+  ```
+
+  ## Step 3: Select Best
+  Pick the highest-scoring variant. Copy to /workspace/agents/$RUN_ID/best.wav
+
+  ## Step 4: Write Report
+  Write /workspace/agents/$RUN_ID/output.md with:
+  - Prompt used
+  - Number of variants generated
+  - CLAP scores for each
+  - Which variant was selected and why
+  - Audio specifications (sample rate, duration, format)
