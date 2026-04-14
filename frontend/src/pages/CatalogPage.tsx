@@ -13,6 +13,18 @@ import {
   Calendar,
   BarChart3,
   Download,
+  Code,
+  DollarSign,
+  Users,
+  BookOpen,
+  Globe,
+  Scale,
+  Eye,
+  AlertTriangle,
+  GitBranch,
+  Plug,
+  Building2,
+  Workflow,
 } from "lucide-react";
 import { listAgents, type Agent } from "../api";
 import { AgentCard } from "../components/AgentCard";
@@ -51,18 +63,19 @@ export function CatalogPage() {
 
         <div className="text-center max-w-2xl mx-auto">
           <h1 className="text-3xl sm:text-5xl font-semibold text-[#f1f5f9] mb-5 leading-[1.15] tracking-tight">
-            Your codebase, audited<br />
-            <span className="text-[#00d4ff]">every Monday.</span>
+            Run AI agents on<br />
+            <span className="text-[#00d4ff]">isolated EU infrastructure.</span>
           </h1>
 
           <p className="text-[16px] text-[#94a3b8] leading-relaxed mb-4 max-w-lg mx-auto">
-            Automated security audits on EU-hosted infrastructure.
-            Each run on a fresh server, secrets isolated, results documented.
-            GDPR compliant. SOC 2 ready audit trail.
+            A managed runtime for AI agents. Each task runs on a fresh server,
+            secrets stay isolated, results are documented. Browse the catalog,
+            build your own, or schedule recurring workflows.
           </p>
 
-          <p className="text-[22px] font-semibold text-[#f1f5f9] mb-8">
-            From <span className="text-[#00d4ff]">$29/month</span>
+          <p className="text-xs text-[#64748b] mb-2 font-medium uppercase tracking-widest">Showcase</p>
+          <p className="text-[15px] text-[#f1f5f9] mb-8">
+            Security audits, automated. <span className="text-[#00d4ff]">From $29/month.</span>
           </p>
 
           <div className="flex items-center justify-center gap-3 mb-6">
@@ -75,6 +88,12 @@ export function CatalogPage() {
               <ArrowRight size={14} />
             </a>
             <a
+              href="#for-developers"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-lg border border-white/[0.08] text-sm text-[#94a3b8] hover:text-[#f1f5f9] hover:border-white/[0.15] no-underline transition-colors"
+            >
+              Publish an agent
+            </a>
+            <a
               href="/auth"
               className="inline-flex items-center gap-2 px-6 py-3 rounded-lg border border-white/[0.08] text-sm text-[#94a3b8] hover:text-[#f1f5f9] hover:border-white/[0.15] no-underline transition-colors"
             >
@@ -82,11 +101,12 @@ export function CatalogPage() {
             </a>
           </div>
 
-          <div className="flex items-center justify-center gap-4 text-xs text-[#64748b]">
+          <div className="flex items-center justify-center gap-4 text-xs text-[#64748b] flex-wrap">
             <span className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
               EU-hosted (Hetzner, Germany)
             </span>
+            <span>EU AI Act ready</span>
             <span>GDPR compliant</span>
             <span>No CLOUD Act exposure</span>
             <a href="https://github.com/mylilcrowdi/agents" target="_blank" rel="noopener" className="text-[#94a3b8] hover:text-[#f1f5f9] no-underline">
@@ -260,6 +280,292 @@ export function CatalogPage() {
               </tbody>
             </table>
           </div>
+        </div>
+      </section>
+
+      {/* EU AI Act Compliance */}
+      <section id="compliance" className="mb-20 scroll-mt-20">
+        <h2 className="text-xs font-medium text-[#64748b] uppercase tracking-widest mb-2 text-center">
+          EU AI Act Compliance
+        </h2>
+        <p className="text-xs text-[#64748b] text-center mb-6 max-w-lg mx-auto">
+          The EU AI Act is enforceable from August 2025. If you deploy AI systems in Europe,
+          you need logging, transparency, and risk documentation. This platform builds that in.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[
+            {
+              icon: Eye,
+              article: "Art. 12",
+              title: "Automatic Logging",
+              desc: "Every agent execution produces an immutable audit trail: inputs, outputs, duration, compute used, cost. Exportable as CSV/JSON for regulatory review.",
+            },
+            {
+              icon: FileCheck,
+              article: "Art. 13",
+              title: "Transparency by Default",
+              desc: "Agent capability cards describe exactly what each agent does, which model it uses, what data it accesses, and what side effects it has. Machine-readable, signed with Ed25519.",
+            },
+            {
+              icon: AlertTriangle,
+              article: "Art. 6/9",
+              title: "Risk Classification Ready",
+              desc: "Tag agents by risk class (minimal, limited, high). High-risk agents get stricter isolation, mandatory human review, and extended log retention.",
+            },
+            {
+              icon: Globe,
+              article: "Art. 2",
+              title: "EU Data Residency",
+              desc: "All compute runs in Hetzner Nuremberg (Germany). No data leaves the EU. No CLOUD Act exposure through US-based providers.",
+            },
+            {
+              icon: Scale,
+              article: "Art. 14",
+              title: "Human Oversight",
+              desc: "Built-in approval gates for high-risk tasks. Webhook notifications before execution. Cancel any running task via API or UI.",
+            },
+            {
+              icon: Shield,
+              article: "Art. 15",
+              title: "Accuracy and Security",
+              desc: "5-factor trust scoring tracks agent reliability over time. Ephemeral compute with secret isolation prevents data leakage between tenants.",
+            },
+          ].map(({ icon: Icon, article, title, desc }) => (
+            <div key={title} className="rounded-xl border border-white/[0.06] bg-[#111118] p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <Icon size={16} className="text-[#00d4ff]" />
+                <span className="text-[10px] font-mono text-[#64748b] px-1.5 py-0.5 rounded bg-white/5">{article}</span>
+              </div>
+              <h3 className="text-sm font-medium text-[#f1f5f9] mb-2">{title}</h3>
+              <p className="text-xs text-[#94a3b8] leading-relaxed">{desc}</p>
+            </div>
+          ))}
+        </div>
+        <div className="mt-6 rounded-xl border border-amber-500/10 bg-amber-500/5 p-4">
+          <p className="text-xs text-amber-200/80 leading-relaxed">
+            <strong className="text-amber-300">Why this matters now:</strong> From August 2025, companies deploying AI systems
+            in the EU must comply with the AI Act. Non-compliance penalties reach up to 35M EUR or 7% of global turnover.
+            Running agents on US infrastructure without audit trails is a liability. This platform gives you compliance by default,
+            not as an afterthought.
+          </p>
+        </div>
+      </section>
+
+      {/* For Agent Developers */}
+      <section id="for-developers" className="mb-20 scroll-mt-20">
+        <h2 className="text-xs font-medium text-[#64748b] uppercase tracking-widest mb-2 text-center">
+          For Agent Developers
+        </h2>
+        <p className="text-xs text-[#64748b] text-center mb-6 max-w-lg mx-auto">
+          You built an agent. Now you need compute, payments, and users. Publish it here, we handle the rest.
+        </p>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          {/* Left: Value prop */}
+          <div className="space-y-4">
+            {[
+              {
+                icon: Code,
+                title: "Publish in 5 minutes",
+                desc: "Define an agent card (JSON), push your code, register via CLI. No infra setup, no Dockerfiles, no cloud accounts.",
+              },
+              {
+                icon: DollarSign,
+                title: "Get paid per execution",
+                desc: "Set your price. We handle Stripe checkout, per-run billing, and payouts via Stripe Connect. You keep 80%, we take 20% for compute and platform.",
+              },
+              {
+                icon: Users,
+                title: "Built-in distribution",
+                desc: "Your agent appears in the catalog with trust scoring, discovery, and compatibility matching. Users find you through search, tags, and pipeline composition.",
+              },
+              {
+                icon: Shield,
+                title: "Isolated execution included",
+                desc: "Every run gets a fresh VM or container. Your agent never shares memory, disk, or network with another tenant. We manage the lifecycle.",
+              },
+              {
+                icon: GitBranch,
+                title: "Pipeline composability",
+                desc: "Define inputs and outputs. The platform automatically matches your agent with compatible agents for multi-step workflows. More pipelines = more revenue.",
+              },
+              {
+                icon: BookOpen,
+                title: "Transparent trust building",
+                desc: "Your trust score grows with every successful execution. Success rate, accuracy, volume, recency, and user ratings, all visible to buyers.",
+              },
+            ].map(({ icon: Icon, title, desc }) => (
+              <div key={title} className="flex gap-3">
+                <Icon size={16} className="text-[#00d4ff] shrink-0 mt-0.5" />
+                <div>
+                  <h3 className="text-sm font-medium text-[#f1f5f9] mb-1">{title}</h3>
+                  <p className="text-xs text-[#94a3b8] leading-relaxed">{desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Right: Quick start code */}
+          <div className="rounded-xl border border-white/[0.06] bg-[#111118] p-5">
+            <h3 className="text-sm font-medium text-[#f1f5f9] mb-4 flex items-center gap-2">
+              <Terminal size={14} className="text-[#00d4ff]" />
+              Publish your first agent
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <p className="text-xs text-[#64748b] mb-1.5">1. Define your agent card</p>
+                <pre className="text-xs bg-[#0a0a0f] rounded-lg p-3 overflow-x-auto text-[#94a3b8]">
+{`{
+  "name": "my-code-reviewer",
+  "domain": "code-quality",
+  "capabilities": {
+    "description": "Reviews PRs for bugs and style",
+    "inputs": [{ "name": "repo_url", "type": "string" }],
+    "outputs": [{ "name": "output.md", "type": "file" }],
+    "tags": ["code-review", "python", "typescript"]
+  },
+  "runtime": {
+    "model": "anthropic/claude-sonnet-4-6",
+    "compute_tier": "container",
+    "estimated_duration_seconds": 120
+  },
+  "pricing": { "base_price_usd": 1.50 }
+}`}
+                </pre>
+              </div>
+              <div>
+                <p className="text-xs text-[#64748b] mb-1.5">2. Register and publish</p>
+                <pre className="text-xs bg-[#0a0a0f] rounded-lg p-3 overflow-x-auto text-[#94a3b8]">
+{`pip install agents-cli
+
+agents-cli provider register \\
+  --name "your-handle" \\
+  --email dev@example.com
+
+agents-cli agent publish ./agent-card.json \\
+  --code ./my_agent/`}
+                </pre>
+              </div>
+              <div>
+                <p className="text-xs text-[#64748b] mb-1.5">3. Track revenue</p>
+                <pre className="text-xs bg-[#0a0a0f] rounded-lg p-3 overflow-x-auto text-[#94a3b8]">
+{`agents-cli dashboard
+# Revenue:   $142.50 (last 30d)
+# Runs:      95
+# Success:   97.8%
+# Rating:    4.7/5`}
+                </pre>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-[#00d4ff]/10 bg-[#0a0a0f] p-4 flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium text-[#f1f5f9]">Ready to publish?</p>
+            <p className="text-xs text-[#64748b]">Read the full provider docs or jump straight in.</p>
+          </div>
+          <div className="flex gap-2">
+            <a
+              href="https://github.com/mylilcrowdi/agents/blob/main/docs/provider-guide.md"
+              target="_blank"
+              rel="noopener"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-white/[0.08] text-xs text-[#94a3b8] hover:text-[#f1f5f9] no-underline transition-colors"
+            >
+              <BookOpen size={12} />
+              Provider docs
+            </a>
+            <a
+              href="/auth"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#00d4ff] text-[#0a0a0f] text-xs font-medium no-underline"
+              style={{ transition: "background 0.2s cubic-bezier(0.16, 1, 0.3, 1)" }}
+            >
+              Create provider account
+              <ArrowRight size={12} />
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* Enterprise */}
+      <section id="enterprise" className="mb-20 scroll-mt-20">
+        <h2 className="text-xs font-medium text-[#64748b] uppercase tracking-widest mb-2 text-center">
+          For Engineering Teams
+        </h2>
+        <p className="text-xs text-[#64748b] text-center mb-6 max-w-lg mx-auto">
+          You could run Semgrep, pip-audit, and npm audit yourself. Here is why teams choose managed agents instead.
+        </p>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+          <div className="rounded-xl border border-white/[0.06] bg-[#111118] p-5">
+            <Workflow size={18} className="text-[#00d4ff] mb-3" />
+            <h3 className="text-sm font-medium text-[#f1f5f9] mb-2">No infra to maintain</h3>
+            <p className="text-xs text-[#94a3b8] leading-relaxed">
+              No CI runners to scale, no Docker images to maintain, no secret rotation scripts.
+              Each agent task gets a fresh server from a clean snapshot. Provisioned in 20 seconds, destroyed after.
+              Your ops team does not need to touch it.
+            </p>
+          </div>
+          <div className="rounded-xl border border-white/[0.06] bg-[#111118] p-5">
+            <Plug size={18} className="text-[#00d4ff] mb-3" />
+            <h3 className="text-sm font-medium text-[#f1f5f9] mb-2">Integrates where you work</h3>
+            <p className="text-xs text-[#94a3b8] leading-relaxed">
+              Webhook delivery to Slack, Teams, PagerDuty, or any endpoint. Trigger agents from CI/CD
+              pipelines via API. Schedule recurring workflows with cron expressions. Export results
+              as JSON or CSV for your existing dashboards.
+            </p>
+          </div>
+          <div className="rounded-xl border border-white/[0.06] bg-[#111118] p-5">
+            <Building2 size={18} className="text-[#00d4ff] mb-3" />
+            <h3 className="text-sm font-medium text-[#f1f5f9] mb-2">Governance built in</h3>
+            <p className="text-xs text-[#94a3b8] leading-relaxed">
+              Every execution logged with immutable audit trail. Per-team API keys with scoped permissions.
+              Cost dashboards show spend per agent, per repo, per team. Compliance exports map directly
+              to SOC 2 Type II and EU AI Act requirements.
+            </p>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-white/[0.06] bg-[#111118] p-6">
+          <h3 className="text-sm font-medium text-[#f1f5f9] mb-4">Why not just run tools yourself?</h3>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="text-[#64748b] border-b border-white/[0.06]">
+                  <th className="text-left py-2 pr-4 font-medium w-1/3"></th>
+                  <th className="text-left py-2 pr-4 font-medium">DIY (Semgrep, CI scripts)</th>
+                  <th className="text-left py-2 font-medium text-[#00d4ff]">Managed Agents</th>
+                </tr>
+              </thead>
+              <tbody className="text-[#94a3b8]">
+                {[
+                  ["Setup time", "Days to weeks per tool", "60 seconds, one CLI command"],
+                  ["Infra cost", "CI minutes + storage + maintenance", "Pay per run, nothing idle"],
+                  ["Secret management", "Your responsibility", "Tenant-isolated, never shared"],
+                  ["Multi-repo governance", "Custom scripting per repo", "One schedule, all repos"],
+                  ["Audit trail", "Grep through CI logs", "Structured, exportable, immutable"],
+                  ["EU data residency", "Depends on your CI provider", "Germany by default"],
+                  ["New capabilities", "Evaluate, install, configure", "Browse catalog, run"],
+                ].map(([capability, diy, managed]) => (
+                  <tr key={capability} className="border-b border-white/[0.04]">
+                    <td className="py-2.5 pr-4 font-medium text-[#f1f5f9]">{capability}</td>
+                    <td className="py-2.5 pr-4 text-amber-400/60">{diy}</td>
+                    <td className="py-2.5 text-emerald-400">{managed}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className="mt-6 text-center">
+          <a
+            href="mailto:hello@renemurrell.de?subject=Agent%20Platform%20Enterprise%20Inquiry"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-lg border border-white/[0.08] text-sm text-[#94a3b8] hover:text-[#f1f5f9] hover:border-white/[0.15] no-underline transition-colors"
+          >
+            Talk to us about Enterprise
+            <ArrowRight size={14} />
+          </a>
         </div>
       </section>
 
