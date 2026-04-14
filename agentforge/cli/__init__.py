@@ -1,1 +1,1 @@
-"""AgentForge CLI: publish, run, status, results."""
+"""CLI: publish, run, status, results."""

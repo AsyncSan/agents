@@ -75,7 +75,7 @@ export function CatalogPage() {
               <ArrowRight size={14} />
             </a>
             <a
-              href="#get-started"
+              href="/auth"
               className="inline-flex items-center gap-2 px-6 py-3 rounded-lg border border-white/[0.08] text-sm text-[#94a3b8] hover:text-[#f1f5f9] hover:border-white/[0.15] no-underline transition-colors"
             >
               Get started
@@ -278,7 +278,7 @@ export function CatalogPage() {
             { icon: BarChart3, label: "Cost Dashboard", detail: "Per-run breakdown" },
             { icon: Download, label: "Compliance Export", detail: "SOC 2 ready" },
             { icon: Shield, label: "Trust Scoring", detail: "5-factor, per agent" },
-            { icon: Terminal, label: "CLI Tool", detail: "pip install agentforge" },
+            { icon: Terminal, label: "CLI Tool", detail: "pip install agents-cli" },
             { icon: FileCheck, label: "Signed Cards", detail: "Ed25519 verified" },
             { icon: Server, label: "Ephemeral Compute", detail: "Destroyed after run" },
           ].map(({ icon: Icon, label, detail }) => (
@@ -361,14 +361,14 @@ export function CatalogPage() {
             <div>
               <p className="text-xs text-[#64748b] mb-1.5">1. Install and login</p>
               <pre className="text-xs bg-[#0a0a0f] rounded-lg p-3 overflow-x-auto text-[#94a3b8]">
-{`pip install agentforge
-agentforge login --api-key af_your_key`}
+{`pip install agents-cli
+agents-cli login --api-key af_your_key`}
               </pre>
             </div>
             <div>
               <p className="text-xs text-[#64748b] mb-1.5">2. Run your first audit</p>
               <pre className="text-xs bg-[#0a0a0f] rounded-lg p-3 overflow-x-auto text-[#94a3b8]">
-{`agentforge run security-audit-v1 \\
+{`agents-cli run security-audit-v1 \\
   -i '{"repo_url": "github.com/your-org/api"}' \\
   --budget 3.00 --wait`}
               </pre>
@@ -376,7 +376,7 @@ agentforge login --api-key af_your_key`}
             <div>
               <p className="text-xs text-[#64748b] mb-1.5">3. Schedule it weekly</p>
               <pre className="text-xs bg-[#0a0a0f] rounded-lg p-3 overflow-x-auto text-[#94a3b8]">
-{`agentforge schedule create security-audit-v1 \\
+{`agents-cli schedule create security-audit-v1 \\
   --name "Monday Audit" \\
   --cron "0 9 * * 1" \\
   -i '{"repo_url": "github.com/your-org/api"}'`}

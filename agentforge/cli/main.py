@@ -1,15 +1,15 @@
-"""AgentForge CLI: manage agents, tasks, and pipelines from the terminal.
+"""CLI: manage agents, tasks, and pipelines from the terminal.
 
 Usage:
-    agentforge login          Store API key
-    agentforge whoami         Show current user info
-    agentforge publish        Register or update an agent from YAML
-    agentforge agents         List/search agents
-    agentforge run            Submit a task to an agent
-    agentforge status         Check task or pipeline status
-    agentforge results        Download task results
-    agentforge logs           View task stdout/stderr
-    agentforge health         Platform health check
+    agents-cli login          Store API key
+    agents-cli whoami         Show current user info
+    agents-cli publish        Register or update an agent from YAML
+    agents-cli agents         List/search agents
+    agents-cli run            Submit a task to an agent
+    agents-cli status         Check task or pipeline status
+    agents-cli results        Download task results
+    agents-cli logs           View task stdout/stderr
+    agents-cli health         Platform health check
 """
 
 import json
@@ -24,8 +24,8 @@ from agentforge.cli.client import get_client, handle_error
 from agentforge.cli.config import clear_config, get_api_key, get_endpoint, save_config
 
 app = typer.Typer(
-    name="agentforge",
-    help="Agent Commerce Infrastructure CLI",
+    name="agents-cli",
+    help="Managed Agent Runtime CLI",
     no_args_is_help=True,
 )
 console = Console()
@@ -41,7 +41,7 @@ def login(
 ):
     """Store API key for authentication."""
     save_config(api_key, endpoint)
-    console.print("[green]Logged in.[/green] Key saved to ~/.agentforge/config.json")
+    console.print("[green]Logged in.[/green] Key saved to ~/.agents-cli/config.json")
 
 
 @app.command()
@@ -56,7 +56,7 @@ def whoami():
     """Show current authentication status and account summary."""
     key = get_api_key()
     if not key:
-        console.print("[red]Not logged in.[/red] Run: agentforge login")
+        console.print("[red]Not logged in.[/red] Run: agents-cli login")
         raise typer.Exit(1)
 
     client = get_client()

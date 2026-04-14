@@ -5,12 +5,13 @@ import io
 import json
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from fastapi.responses import Response
 from sqlalchemy import Date, cast, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from agentforge.api.auth import get_current_user
+from agentforge.api.errors import APIError, ErrorCode
 from agentforge.api.schemas import (
     AgentUsageSummary,
     ComplianceExportRequest,
@@ -161,10 +162,10 @@ async def export_compliance(
             hour=23, minute=59, second=59, tzinfo=timezone.utc
         )
     except ValueError:
-        raise HTTPException(status_code=422, detail="Invalid date format. Use YYYY-MM-DD")
+        raise APIError(422, ErrorCode.INVALID_DATE, "Invalid date format. Use YYYY-MM-DD")
 
     if (end - start).days > 365:
-        raise HTTPException(status_code=400, detail="Maximum range is 365 days")
+        raise APIError(400, ErrorCode.DATE_RANGE_TOO_LARGE, "Maximum range is 365 days")
 
     result = await db.execute(
         select(EventLog)

@@ -1,11 +1,12 @@
 """Rating routes: consumer feedback on completed tasks."""
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from agentforge.api.auth import require_role
+from agentforge.api.errors import APIError, ErrorCode
 from agentforge.api.schemas import (
     RatingCreateRequest,
     RatingListResponse,
@@ -35,18 +36,18 @@ async def rate_task(
     result = await db.execute(select(Task).where(Task.id == task_id))
     task = result.scalar_one_or_none()
     if not task:
-        raise HTTPException(status_code=404, detail="Task not found")
+        raise APIError(404, ErrorCode.TASK_NOT_FOUND, "Task not found")
 
     if task.consumer_id != user["id"]:
-        raise HTTPException(status_code=403, detail="Not your task")
+        raise APIError(403, ErrorCode.FORBIDDEN, "Not your task")
 
     if task.status != "completed":
-        raise HTTPException(status_code=400, detail="Can only rate completed tasks")
+        raise APIError(422, ErrorCode.TASK_NOT_COMPLETED, "Can only rate completed tasks")
 
     # Check for existing rating
     existing = await db.execute(select(Rating).where(Rating.task_id == task_id))
     if existing.scalar_one_or_none():
-        raise HTTPException(status_code=409, detail="Task already rated")
+        raise APIError(409, ErrorCode.ALREADY_RATED, "Task already rated")
 
     rating = Rating(
         task_id=task_id,
@@ -60,7 +61,7 @@ async def rate_task(
         await db.flush()
     except IntegrityError:
         await db.rollback()
-        raise HTTPException(status_code=409, detail="Task already rated")
+        raise APIError(409, ErrorCode.ALREADY_RATED, "Task already rated")
 
     # Recompute trust score with rating factor
     agent_result = await db.execute(select(Agent).where(Agent.id == task.agent_id))
@@ -106,7 +107,7 @@ async def list_agent_ratings(
     # Verify agent exists
     agent_result = await db.execute(select(Agent).where(Agent.id == agent_id))
     if not agent_result.scalar_one_or_none():
-        raise HTTPException(status_code=404, detail="Agent not found")
+        raise APIError(404, ErrorCode.AGENT_NOT_FOUND, "Agent not found")
 
     # Count + average
     stats = await db.execute(

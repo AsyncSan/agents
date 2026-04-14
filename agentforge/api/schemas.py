@@ -3,7 +3,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 # --- Auth ---
 
@@ -45,23 +45,28 @@ class AgentOutput(BaseModel):
 
 
 class AgentConstraints(BaseModel):
-    timeout_max: int = 3600
-    max_repo_size_mb: int | None = None
+    timeout_max: int = Field(default=3600, ge=60, le=3600)
+    max_repo_size_mb: int | None = Field(None, ge=1)
     languages: list[str] | None = None
 
 
 class AgentRuntime(BaseModel):
     snapshot_profile: str = "base"
     server_type: str = "cax11"
+    compute_tier: str = Field(
+        default="container",
+        pattern="^(container|vm)$",
+        description="container (~100ms boot, shared kernel) or vm (~20s boot, full isolation)",
+    )
     model: str = "anthropic/claude-sonnet-4-6"
     tools: list[str] = ["shell"]
-    estimated_duration_seconds: int = 300
-    estimated_cost_usd: float = 0.50
+    estimated_duration_seconds: int = Field(default=300, ge=10, le=3600)
+    estimated_cost_usd: float = Field(default=0.50, ge=0)
 
 
 class AgentPricing(BaseModel):
     model: str = "per_execution"
-    base_price_usd: float = 1.00
+    base_price_usd: float = Field(default=1.00, ge=0)
 
 
 class AgentCreateRequest(BaseModel):
@@ -130,8 +135,8 @@ class CategoryListResponse(BaseModel):
 
 
 class TaskConstraints(BaseModel):
-    timeout: int | None = None  # max seconds, overrides agent default
-    max_cost_usd: float | None = None  # budget cap, reject if agent price exceeds
+    timeout: int | None = Field(None, ge=60, le=3600)
+    max_cost_usd: float | None = Field(None, ge=0)
 
 
 class TaskCreateRequest(BaseModel):
@@ -139,6 +144,21 @@ class TaskCreateRequest(BaseModel):
     inputs: dict = {}
     constraints: TaskConstraints = TaskConstraints()
     callback_url: str | None = None
+    compute_tier: str | None = Field(
+        None, pattern="^(container|vm)$",
+        description="Override agent's compute tier for this task",
+    )
+    payment_rail: str | None = Field(
+        None, pattern="^(stripe|solana)$",
+        description="Payment rail: 'stripe' (default) or 'solana'",
+    )
+
+    @field_validator("callback_url")
+    @classmethod
+    def validate_callback_url(cls, v: str | None) -> str | None:
+        if v is not None and not v.startswith(("https://", "http://")):
+            raise ValueError("callback_url must be a valid HTTP(S) URL")
+        return v
 
 
 class TaskResponse(BaseModel):
@@ -178,11 +198,21 @@ class ExecutionResponse(BaseModel):
 # --- Pipeline ---
 
 
+class StepCondition(BaseModel):
+    """Condition for conditional branching. Step runs only if condition is met."""
+
+    field: str  # key in pipeline context to check
+    op: str = Field(pattern="^(eq|ne|gt|lt|gte|lte|in|contains|exists)$")
+    value: str | int | float | bool | list | None = None
+
+
 class PipelineStep(BaseModel):
     agent_id: str
     inputs: dict = {}
     output_map: dict[str, str] = {}
     constraints: TaskConstraints = TaskConstraints()
+    step_index: int | None = None  # explicit index for parallel grouping
+    condition: StepCondition | None = None  # skip step if condition not met
 
 
 class PipelineCreateRequest(BaseModel):
@@ -190,15 +220,24 @@ class PipelineCreateRequest(BaseModel):
     constraints: TaskConstraints = TaskConstraints()
     callback_url: str | None = None
 
+    @field_validator("callback_url")
+    @classmethod
+    def validate_callback_url(cls, v: str | None) -> str | None:
+        if v is not None and not v.startswith(("https://", "http://")):
+            raise ValueError("callback_url must be a valid HTTP(S) URL")
+        return v
+
 
 class PipelineResponse(BaseModel):
     id: str
     consumer_id: UUID
     status: str
     current_step: int
+    total_steps: int
     chain_trust_score: float | None
     steps: list[dict]
     tasks: list[TaskResponse]
+    context: dict | None = None
     total_authorized_cents: int
     total_captured_cents: int
     max_cost_usd: float | None
@@ -300,11 +339,18 @@ class PlatformHealthResponse(BaseModel):
 
 
 class WebhookCreateRequest(BaseModel):
-    url: str
+    url: str = Field(min_length=10, max_length=2048)
     event_types: list[str] = Field(
         min_length=1,
         description="Event types to subscribe to. Use '*' for all events.",
     )
+
+    @field_validator("url")
+    @classmethod
+    def validate_webhook_url(cls, v: str) -> str:
+        if not v.startswith("https://"):
+            raise ValueError("Webhook URL must use HTTPS")
+        return v
 
 
 class WebhookResponse(BaseModel):
@@ -376,6 +422,86 @@ class PaymentSetupResponse(BaseModel):
     stripe_customer_id: str
     payment_method_attached: bool
     default_payment_method: str | None
+
+
+# --- Checkout Session ---
+
+
+class CheckoutSessionRequest(BaseModel):
+    success_url: str | None = None
+    cancel_url: str | None = None
+
+
+class CheckoutSessionResponse(BaseModel):
+    session_id: str
+    url: str
+
+
+# --- Payment Method Management ---
+
+
+class PaymentMethodItem(BaseModel):
+    id: str
+    brand: str
+    last4: str
+    exp_month: int
+    exp_year: int
+    is_default: bool
+
+
+class PaymentMethodListResponse(BaseModel):
+    payment_methods: list[PaymentMethodItem]
+
+
+class SetDefaultPaymentMethodRequest(BaseModel):
+    payment_method_id: str
+
+
+# --- Stripe Connect (Provider) ---
+
+
+class ConnectOnboardRequest(BaseModel):
+    """No fields needed, uses provider's existing email/name."""
+    pass
+
+
+class ConnectOnboardResponse(BaseModel):
+    account_id: str
+    onboarding_url: str
+
+
+class ConnectStatusResponse(BaseModel):
+    account_id: str
+    charges_enabled: bool
+    payouts_enabled: bool
+    details_submitted: bool
+    requirements: dict
+    dashboard_url: str | None = None
+
+
+# --- Solana Wallet ---
+
+
+class WalletRegisterRequest(BaseModel):
+    wallet_address: str = Field(min_length=32, max_length=64)
+    signature: str  # base64 Ed25519 sig of challenge message
+    message: str  # the challenge message that was signed
+
+
+class WalletRegisterResponse(BaseModel):
+    wallet_address: str
+    verified: bool
+
+
+class SolanaPaymentVerifyRequest(BaseModel):
+    tx_signature: str = Field(min_length=64, max_length=128)
+
+
+class SolanaPaymentVerifyResponse(BaseModel):
+    verified: bool
+    amount_usdc: float | None = None
+    tx_signature: str | None = None
+    error: str | None = None
 
 
 # --- Schedules ---
@@ -452,6 +578,6 @@ class DashboardResponse(BaseModel):
 
 
 class ComplianceExportRequest(BaseModel):
-    start_date: str = Field(description="ISO date: YYYY-MM-DD")
-    end_date: str = Field(description="ISO date: YYYY-MM-DD")
+    start_date: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$", description="ISO date: YYYY-MM-DD")
+    end_date: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$", description="ISO date: YYYY-MM-DD")
     format: str = Field(default="json", pattern="^(json|csv)$")

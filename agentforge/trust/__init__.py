@@ -12,6 +12,11 @@ a provisional score with a volume penalty.
 
 import math
 
+from sqlalchemy import update
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from agentforge.models.agent import Agent
+
 
 def compute_trust_score(
     total_executions: int,
@@ -59,3 +64,67 @@ def compute_trust_score(
 
     # Clamp to [0, 1]
     return round(max(0.0, min(1.0, score)), 2)
+
+
+async def atomic_update_trust(
+    db: AsyncSession,
+    agent_id: str,
+    success: bool,
+    elapsed_seconds: int,
+    expected_duration: float,
+) -> float:
+    """Atomically update agent trust metrics using SQL expressions.
+
+    Avoids read-modify-write race conditions by computing new values
+    directly in the UPDATE statement. Returns the new trust score.
+    """
+    # Single atomic UPDATE: increment counters, compute rolling average
+    # We use SQL expressions so concurrent updates don't clobber each other.
+    new_total = Agent.total_executions + 1
+    new_success = Agent.success_count + (1 if success else 0)
+
+    # Rolling average: new_avg = old_avg + (elapsed - old_avg) / new_total
+    # For first execution (avg is NULL/0), just use elapsed
+    from sqlalchemy import Float, case, cast
+
+    old_avg = cast(
+        case((Agent.avg_duration_seconds.is_(None), 0.0), else_=Agent.avg_duration_seconds),
+        Float,
+    )
+    new_avg = old_avg + (float(elapsed_seconds) - old_avg) / cast(new_total, Float)
+
+    await db.execute(
+        update(Agent)
+        .where(Agent.id == agent_id)
+        .values(
+            total_executions=new_total,
+            success_count=new_success,
+            avg_duration_seconds=new_avg,
+        )
+    )
+    await db.flush()
+
+    # Now read the fresh values and compute trust score
+    from sqlalchemy import select
+
+    result = await db.execute(
+        select(
+            Agent.total_executions,
+            Agent.success_count,
+            Agent.avg_duration_seconds,
+        ).where(Agent.id == agent_id)
+    )
+    row = result.one()
+
+    trust = compute_trust_score(
+        total_executions=row.total_executions,
+        success_count=row.success_count,
+        avg_duration=float(row.avg_duration_seconds or 0),
+        expected_duration=expected_duration,
+    )
+
+    await db.execute(
+        update(Agent).where(Agent.id == agent_id).values(trust_score=trust)
+    )
+
+    return trust

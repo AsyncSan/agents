@@ -1,17 +1,19 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { Clock, Key, RefreshCw } from "lucide-react";
-import { listTasks, getExecutions, type Task, type Execution } from "../api";
+import { Clock, Key, RefreshCw, FileText, Terminal } from "lucide-react";
+import { listTasks, getExecutions, getTaskResult, type Task, type Execution } from "../api";
 import { StatusBadge } from "../components/StatusBadge";
 
 export function TasksPage() {
   const [apiKey, setApiKey] = useState(() => localStorage.getItem("af_api_key") || "");
   const [tasks, setTasks] = useState<Task[]>([]);
   const [executions, setExecutions] = useState<Record<string, Execution[]>>({});
+  const [results, setResults] = useState<Record<string, string>>({});
+  const [resultTab, setResultTab] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
 
-  const loadTasks = async () => {
+  const loadTasks = useCallback(async () => {
     if (!apiKey) return;
     setLoading(true);
     localStorage.setItem("af_api_key", apiKey);
@@ -23,11 +25,33 @@ export function TasksPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [apiKey]);
 
   useEffect(() => {
     if (apiKey) loadTasks();
   }, []);
+
+  // Auto-poll while any task is active
+  useEffect(() => {
+    const hasActive = tasks.some((t) =>
+      ["pending", "authorized", "dispatching", "running"].includes(t.status)
+    );
+    if (!hasActive || !apiKey) return;
+
+    const interval = setInterval(loadTasks, 5000);
+    return () => clearInterval(interval);
+  }, [tasks, apiKey, loadTasks]);
+
+  const loadResult = async (taskId: string, file: string) => {
+    const key = `${taskId}:${file}`;
+    if (results[key]) return;
+    try {
+      const text = await getTaskResult(apiKey, taskId, file);
+      setResults((prev) => ({ ...prev, [key]: text }));
+    } catch {
+      setResults((prev) => ({ ...prev, [key]: "(no result available)" }));
+    }
+  };
 
   const toggleExpand = async (taskId: string) => {
     if (expanded === taskId) {
@@ -42,6 +66,11 @@ export function TasksPage() {
       } catch {
         /* ignore */
       }
+    }
+    // Auto-load result for completed tasks
+    const task = tasks.find((t) => t.id === taskId);
+    if (task?.status === "completed") {
+      loadResult(taskId, "output.md");
     }
   };
 
@@ -170,6 +199,41 @@ export function TasksPage() {
 
                 {executions[task.id]?.length === 0 && (
                   <p className="mt-3 text-xs text-[#64748b]">No executions yet.</p>
+                )}
+
+                {/* Result Viewer */}
+                {task.status === "completed" && (
+                  <div className="mt-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <h4 className="text-xs text-[#64748b]">Result</h4>
+                      <div className="flex gap-1">
+                        {["output.md", "stdout.log", "stderr.log"].map((file) => {
+                          const tab = resultTab[task.id] || "output.md";
+                          return (
+                            <button
+                              key={file}
+                              onClick={() => {
+                                setResultTab((prev) => ({ ...prev, [task.id]: file }));
+                                loadResult(task.id, file);
+                              }}
+                              className={`px-2 py-0.5 rounded text-[10px] transition-colors ${
+                                tab === file
+                                  ? "bg-[#00d4ff]/10 text-[#00d4ff]"
+                                  : "text-[#64748b] hover:text-[#94a3b8]"
+                              }`}
+                            >
+                              {file === "output.md" && <FileText size={9} className="inline mr-0.5" />}
+                              {file === "stdout.log" && <Terminal size={9} className="inline mr-0.5" />}
+                              {file.replace(".log", "").replace(".md", "")}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    <pre className="rounded-lg bg-[#0a0a0f] border border-white/[0.04] p-3 text-xs text-[#94a3b8] overflow-x-auto max-h-64 overflow-y-auto font-mono leading-relaxed whitespace-pre-wrap">
+                      {results[`${task.id}:${resultTab[task.id] || "output.md"}`] || "Loading..."}
+                    </pre>
+                  </div>
                 )}
               </div>
             )}

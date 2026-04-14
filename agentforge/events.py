@@ -1,22 +1,19 @@
 """Event emission: log events and deliver to webhook subscribers.
 
 Events are persisted to the event_log table and delivered asynchronously
-to matching webhook subscribers via HMAC-signed HTTP POST.
+via the webhook delivery queue (non-blocking, with retries).
 """
 
-import hashlib
-import hmac
-import json
 import logging
 import uuid
 from datetime import datetime, timezone
 
-import httpx
-from sqlalchemy import select, update
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from agentforge.models.event_log import EventLog
 from agentforge.models.webhook import Webhook
+from agentforge.webhook_delivery import WebhookJob, webhook_queue
 
 log = logging.getLogger("agentforge.events")
 
@@ -44,6 +41,7 @@ EVENT_TYPES = [
     "schedule.fired",
     "webhook.created",
     "webhook.deleted",
+    "webhook.test",
 ]
 
 
@@ -57,7 +55,7 @@ async def emit_event(
     payload: dict | None = None,
     deliver: bool = True,
 ) -> EventLog:
-    """Log an event and optionally deliver to webhook subscribers."""
+    """Log an event and enqueue webhook deliveries (non-blocking)."""
     event = EventLog(
         id=uuid.uuid4(),
         event_type=event_type,
@@ -72,67 +70,40 @@ async def emit_event(
     await db.flush()
 
     if deliver:
-        await _deliver_to_subscribers(db, event)
+        await _enqueue_deliveries(db, event)
 
     return event
 
 
-async def _deliver_to_subscribers(db: AsyncSession, event: EventLog) -> None:
-    """Find matching webhooks and deliver the event payload."""
+async def _enqueue_deliveries(db: AsyncSession, event: EventLog) -> None:
+    """Find matching webhooks and enqueue delivery jobs (non-blocking)."""
     result = await db.execute(
-        select(Webhook).where(
-            Webhook.active.is_(True),
-        )
+        select(Webhook).where(Webhook.active.is_(True))
     )
     webhooks = result.scalars().all()
+
+    body = {
+        "event_id": str(event.id),
+        "event_type": event.event_type,
+        "resource_type": event.resource_type,
+        "resource_id": event.resource_id,
+        "payload": event.payload,
+        "timestamp": event.created_at.isoformat(),
+    }
 
     for wh in webhooks:
         if not _event_matches(event.event_type, wh.event_types):
             continue
 
-        # Build payload
-        body = {
-            "event_id": str(event.id),
-            "event_type": event.event_type,
-            "resource_type": event.resource_type,
-            "resource_id": event.resource_id,
-            "payload": event.payload,
-            "timestamp": event.created_at.isoformat(),
-        }
-        body_bytes = json.dumps(body, default=str).encode()
-
-        # HMAC signature
-        signature = hmac.new(
-            wh.secret.encode(), body_bytes, hashlib.sha256
-        ).hexdigest()
-
-        try:
-            async with httpx.AsyncClient(timeout=10) as client:
-                await client.post(
-                    wh.url,
-                    content=body_bytes,
-                    headers={
-                        "Content-Type": "application/json",
-                        "X-AgentForge-Signature": f"sha256={signature}",
-                        "X-AgentForge-Event": event.event_type,
-                    },
-                )
-            await db.execute(
-                update(Webhook)
-                .where(Webhook.id == wh.id)
-                .values(
-                    total_deliveries=Webhook.total_deliveries + 1,
-                    last_delivery_at=datetime.now(timezone.utc),
-                )
+        webhook_queue.enqueue(
+            WebhookJob(
+                webhook_id=str(wh.id),
+                url=wh.url,
+                secret=wh.secret,
+                body=body,
+                event_type=event.event_type,
             )
-            log.debug(f"Webhook delivered: {event.event_type} -> {wh.url}")
-        except Exception as e:
-            await db.execute(
-                update(Webhook)
-                .where(Webhook.id == wh.id)
-                .values(total_failures=Webhook.total_failures + 1)
-            )
-            log.warning(f"Webhook delivery failed: {wh.url}: {e}")
+        )
 
 
 def _event_matches(event_type: str, subscribed: list[str]) -> bool:

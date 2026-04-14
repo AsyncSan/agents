@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, Clock, DollarSign, Shield } from "lucide-react";
+import { ArrowRight, Clock, DollarSign } from "lucide-react";
 import type { Agent } from "../api";
+import { TrustRing } from "./TrustRing";
 
 const domainColors: Record<string, string> = {
   security: "bg-red-500/10 text-red-400 border-red-500/20",
@@ -25,12 +26,7 @@ export function AgentCard({ agent }: { agent: Agent }) {
         <span className={`text-xs px-2 py-0.5 rounded-full border ${colorClass}`}>
           {domain}
         </span>
-        {agent.trust_score !== null && (
-          <span className="flex items-center gap-1 text-xs text-emerald-400">
-            <Shield size={12} />
-            {agent.trust_score}
-          </span>
-        )}
+        <TrustRing score={agent.trust_score} size={32} />
       </div>
 
       <h3 className="text-[15px] font-medium text-[#f1f5f9] mb-1.5 group-hover:text-[#00d4ff] transition-colors">

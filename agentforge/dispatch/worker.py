@@ -30,13 +30,37 @@ from agentforge.models.task import Task
 
 log = logging.getLogger("agentforge.worker")
 
-# Singleton dispatcher (initialized lazily)
-_dispatcher: AgentForgeDispatcher | None = None
+# Singleton dispatchers (initialized lazily)
+_vm_dispatcher: AgentForgeDispatcher | None = None
+_container_dispatcher: AgentForgeDispatcher | None = None
 
 
-def get_dispatcher() -> AgentForgeDispatcher:
-    global _dispatcher
-    if _dispatcher is None:
+def get_dispatcher(compute_tier: str = "vm") -> AgentForgeDispatcher:
+    """Get the dispatcher for the given compute tier.
+
+    - "vm": Full Hetzner VM (~20s boot, full isolation)
+    - "container": Docker container (~100ms boot, lightweight)
+    """
+    global _vm_dispatcher, _container_dispatcher
+
+    if compute_tier == "container" and settings.docker_enabled:
+        if _container_dispatcher is None:
+            from agentforge.dispatch.docker_provider import DockerProvider
+
+            provider = DockerProvider(
+                default_image=settings.docker_default_image,
+                cpu_limit=settings.docker_cpu_limit,
+                memory_limit=settings.docker_memory_limit,
+                network=settings.docker_network,
+                docker_host=settings.docker_host or None,
+            )
+            _container_dispatcher = AgentForgeDispatcher(
+                compute=provider, results_dir="results"
+            )
+        return _container_dispatcher
+
+    # Default: VM dispatcher
+    if _vm_dispatcher is None:
         provider = HetznerProvider(
             hcloud_token=settings.hcloud_token,
             ssh_key_name=settings.hcloud_ssh_key_name,
@@ -51,8 +75,10 @@ def get_dispatcher() -> AgentForgeDispatcher:
                 "gui-x86": settings.snapshot_gui_x86,
             },
         )
-        _dispatcher = AgentForgeDispatcher(compute=provider, results_dir="results")
-    return _dispatcher
+        _vm_dispatcher = AgentForgeDispatcher(
+            compute=provider, results_dir="results"
+        )
+    return _vm_dispatcher
 
 
 async def _send_callback(
@@ -83,8 +109,6 @@ async def _send_callback(
 
 async def process_task(task_id: str) -> None:
     """Process a single pending task: dispatch to ephemeral compute."""
-    dispatcher = get_dispatcher()
-
     async with async_session() as db:
         # Load task + agent
         result = await db.execute(select(Task).where(Task.id == task_id))
@@ -98,6 +122,12 @@ async def process_task(task_id: str) -> None:
             task.status = "failed"
             await db.commit()
             return
+
+        # Resolve compute tier: task override > agent default > "container"
+        agent_tier = agent.card.get("runtime", {}).get("compute_tier", "container")
+        tier = task.compute_tier or agent_tier
+        dispatcher = get_dispatcher(compute_tier=tier)
+        log.info(f"Task {task_id}: compute_tier={tier} (agent={agent_tier})")
 
         # Authorize payment if billing is configured
         payment_intent_id = None
@@ -210,44 +240,18 @@ async def process_task(task_id: str) -> None:
                 .values(status="completed" if dispatch_result.success else "failed")
             )
 
-            # Update agent trust metrics and recompute trust score
-            from agentforge.trust import compute_trust_score
+            # Atomically update agent trust metrics (no race condition)
+            from agentforge.trust import atomic_update_trust
 
-            agent_result = await db.execute(select(Agent).where(Agent.id == agent.id))
-            agent_fresh = agent_result.scalar_one()
-
-            new_total = agent_fresh.total_executions + 1
-            new_success = agent_fresh.success_count + (1 if dispatch_result.success else 0)
-
-            # Rolling average duration
-            old_avg = float(agent_fresh.avg_duration_seconds or 0)
-            elapsed = dispatch_result.elapsed_seconds or 0
-            if old_avg == 0:
-                new_avg = float(elapsed)
-            else:
-                new_avg = old_avg + (elapsed - old_avg) / new_total
-
-            # Expected duration from agent card
-            expected_duration = agent_fresh.card.get("runtime", {}).get(
+            expected_duration = agent.card.get("runtime", {}).get(
                 "estimated_duration_seconds", 300
             )
-
-            trust = compute_trust_score(
-                total_executions=new_total,
-                success_count=new_success,
-                avg_duration=new_avg,
+            trust = await atomic_update_trust(
+                db=db,
+                agent_id=agent.id,
+                success=dispatch_result.success,
+                elapsed_seconds=dispatch_result.elapsed_seconds or 0,
                 expected_duration=expected_duration,
-            )
-
-            await db.execute(
-                update(Agent)
-                .where(Agent.id == agent.id)
-                .values(
-                    total_executions=new_total,
-                    success_count=new_success,
-                    avg_duration_seconds=new_avg,
-                    trust_score=trust,
-                )
             )
 
             # Capture or cancel payment

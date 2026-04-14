@@ -13,7 +13,7 @@ class TestCLIHelp:
     def test_help(self):
         result = runner.invoke(app, ["--help"])
         assert result.exit_code == 0
-        assert "Agent Commerce Infrastructure CLI" in result.output
+        assert "Managed Agent Runtime CLI" in result.output
 
     def test_login_help(self):
         result = runner.invoke(app, ["login", "--help"])

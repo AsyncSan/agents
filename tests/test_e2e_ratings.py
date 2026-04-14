@@ -72,7 +72,7 @@ class TestRatings:
             headers={"X-API-Key": api_key},
             json={"score": 3},
         )
-        assert resp.status_code == 400
+        assert resp.status_code == 422
 
     @pytest.mark.asyncio
     async def test_duplicate_rating_rejected(

@@ -6,12 +6,13 @@ provider secrets to /workspace/secrets/provider/. No key ever crosses
 tenant boundaries. Destroyed with the server after execution.
 """
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from agentforge.api.auth import get_current_user
+from agentforge.api.errors import APIError, ErrorCode
 from agentforge.db import get_db
 from agentforge.models.consumer import Consumer
 from agentforge.models.provider import Provider
@@ -42,7 +43,7 @@ async def set_secrets(
         entity = result.scalar_one_or_none()
 
     if not entity:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise APIError(404, ErrorCode.USER_NOT_FOUND, "User not found")
 
     existing = dict(entity.secrets or {})
     existing.update(req.secrets)
@@ -66,7 +67,7 @@ async def list_secrets(
         entity = result.scalar_one_or_none()
 
     if not entity:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise APIError(404, ErrorCode.USER_NOT_FOUND, "User not found")
 
     return SecretsListResponse(keys=list((entity.secrets or {}).keys()))
 
@@ -86,11 +87,11 @@ async def delete_secret(
         entity = result.scalar_one_or_none()
 
     if not entity:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise APIError(404, ErrorCode.USER_NOT_FOUND, "User not found")
 
     existing = dict(entity.secrets or {})
     if key_name not in existing:
-        raise HTTPException(status_code=404, detail="Secret not found")
+        raise APIError(404, ErrorCode.SECRET_NOT_FOUND, "Secret not found")
 
     del existing[key_name]
     entity.secrets = existing  # new dict triggers SQLAlchemy change detection

@@ -18,6 +18,9 @@ class Consumer(Base, TimestampMixin):
     api_key_hash: Mapped[str] = mapped_column(Text, nullable=False)
     stripe_customer_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
+    # Solana wallet for crypto payments
+    solana_wallet: Mapped[str | None] = mapped_column(String(64), nullable=True)
+
     # Encrypted secrets injected into ephemeral servers at /workspace/secrets/consumer/
     # Format: {"OPENAI_API_KEY": "sk-...", "SERPER_API_KEY": "..."}
     secrets: Mapped[dict | None] = mapped_column(JSONB, nullable=True)

@@ -1,0 +1,18 @@
+FROM python:3.13-slim
+
+# Minimal agent runner: Python, bash, curl, git
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    bash curl git jq ca-certificates openssh-client rsync \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install common Python packages agents might need
+RUN pip install --no-cache-dir \
+    httpx requests pyyaml
+
+# Create workspace structure
+RUN mkdir -p /workspace/secrets/consumer /workspace/secrets/provider
+
+WORKDIR /workspace
+
+# Keep container alive (dispatcher exec's into it)
+CMD ["sleep", "infinity"]

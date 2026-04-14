@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from agentforge.api.auth import get_current_user
+from agentforge.api.auth import generate_api_key, get_current_user, hash_api_key
 from agentforge.db import get_db
 from agentforge.models.agent import Agent
 from agentforge.models.consumer import Consumer
@@ -15,6 +15,11 @@ from agentforge.models.task import Task
 from agentforge.models.webhook import Webhook
 
 router = APIRouter(prefix="/v1/me", tags=["me"])
+
+
+class ApiKeyRotateResponse(BaseModel):
+    api_key: str  # new key, shown only once
+    message: str = "API key rotated. Old key is now invalid."
 
 
 class MeResponse(BaseModel):
@@ -28,6 +33,8 @@ class MeResponse(BaseModel):
     tasks_count: int
     agents_count: int | None  # only for providers
     stripe_configured: bool
+    solana_wallet: str | None = None
+    connect_status: str | None = None  # providers: pending, active, restricted
     created_at: str
 
 
@@ -71,6 +78,7 @@ async def get_me(
             tasks_count=task_count,
             agents_count=None,
             stripe_configured=stripe_ok,
+            solana_wallet=entity.solana_wallet,
             created_at=entity.created_at.isoformat(),
         )
 
@@ -110,6 +118,27 @@ async def get_me(
             schedules_count=None,
             tasks_count=task_count,
             agents_count=agent_count,
-            stripe_configured=False,
+            stripe_configured=bool(entity.stripe_connect_id),
+            solana_wallet=entity.solana_wallet,
+            connect_status=entity.stripe_connect_status,
             created_at=entity.created_at.isoformat(),
         )
+
+
+@router.post("/api-key/rotate", response_model=ApiKeyRotateResponse)
+async def rotate_api_key(
+    user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Generate a new API key and invalidate the old one. New key shown only once."""
+    if user["role"] == "consumer":
+        result = await db.execute(select(Consumer).where(Consumer.id == user["id"]))
+    else:
+        result = await db.execute(select(Provider).where(Provider.id == user["id"]))
+
+    entity = result.scalar_one()
+    new_key = generate_api_key()
+    entity.api_key_hash = hash_api_key(new_key)
+    await db.commit()
+
+    return ApiKeyRotateResponse(api_key=new_key)

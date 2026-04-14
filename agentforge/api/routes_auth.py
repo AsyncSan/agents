@@ -1,10 +1,11 @@
 """Auth routes: registration for providers and consumers."""
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from agentforge.api.auth import generate_api_key, hash_api_key
+from agentforge.api.errors import APIError, ErrorCode
 from agentforge.api.schemas import RegisterRequest, RegisterResponse
 from agentforge.db import get_db
 from agentforge.models.consumer import Consumer
@@ -22,7 +23,7 @@ async def register(req: RegisterRequest, db: AsyncSession = Depends(get_db)):
     # Check for duplicate email
     existing = await db.execute(select(model).where(model.email == req.email))
     if existing.scalar_one_or_none():
-        raise HTTPException(status_code=409, detail="Email already registered")
+        raise APIError(409, ErrorCode.ALREADY_EXISTS, "Email already registered")
 
     api_key = generate_api_key()
     kwargs = {"name": req.name, "email": req.email, "api_key_hash": hash_api_key(api_key)}

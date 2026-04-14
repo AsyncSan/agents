@@ -1,10 +1,11 @@
 """Provider routes: public profiles and aggregated stats."""
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from agentforge.api.errors import APIError, ErrorCode
 from agentforge.api.routes_agents import _agent_to_response
 from agentforge.api.schemas import ProviderProfileResponse
 from agentforge.db import get_db
@@ -27,7 +28,7 @@ async def get_provider_profile(
     )
     provider = result.scalar_one_or_none()
     if not provider:
-        raise HTTPException(status_code=404, detail="Provider not found")
+        raise APIError(404, ErrorCode.PROVIDER_NOT_FOUND, "Provider not found")
 
     # Aggregated stats across all agents
     stats_result = await db.execute(

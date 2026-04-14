@@ -61,10 +61,11 @@ class TestWebhookCRUD:
             headers={"X-API-Key": api_key},
         )
         assert del_resp.status_code == 204
-        # Verify it's deactivated
+        # Verify it's deactivated (include inactive)
         list_resp = await client.get(
             "/v1/me/webhooks",
             headers={"X-API-Key": api_key},
+            params={"active_only": "false"},
         )
         webhooks = list_resp.json()["webhooks"]
         deleted_wh = next((w for w in webhooks if w["id"] == wh_id), None)

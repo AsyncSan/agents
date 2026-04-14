@@ -29,9 +29,13 @@ class Pipeline(Base, TimestampMixin):
     # Chain definition and progress
     steps: Mapped[list] = mapped_column(JSONB, nullable=False)
     current_step: Mapped[int] = mapped_column(Integer, default=0)
+    total_steps: Mapped[int] = mapped_column(Integer, default=0)  # distinct step groups
     chain_trust_score: Mapped[float | None] = mapped_column(
         Numeric(5, 2), nullable=True
     )
+
+    # Shared context: key-value store accessible by all pipeline steps
+    context: Mapped[dict | None] = mapped_column(JSONB, nullable=True, default=dict)
 
     tasks = relationship(
         "Task", back_populates="pipeline", lazy="selectin", order_by="Task.step_index"

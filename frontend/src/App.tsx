@@ -3,6 +3,8 @@ import { Header } from "./components/Header";
 import { CatalogPage } from "./pages/CatalogPage";
 import { AgentPage } from "./pages/AgentPage";
 import { TasksPage } from "./pages/TasksPage";
+import { PipelinesPage } from "./pages/PipelinesPage";
+import { AuthPage } from "./pages/AuthPage";
 
 export default function App() {
   return (
@@ -13,6 +15,8 @@ export default function App() {
           <Route path="/" element={<CatalogPage />} />
           <Route path="/agents/:id" element={<AgentPage />} />
           <Route path="/tasks" element={<TasksPage />} />
+          <Route path="/pipelines" element={<PipelinesPage />} />
+          <Route path="/auth" element={<AuthPage />} />
         </Routes>
       </main>
     </div>

@@ -92,7 +92,7 @@ class TestPipelineCreation:
             },
         )
         assert resp.status_code == 400
-        assert "exceeds budget" in resp.json()["detail"]
+        assert resp.json()["error"]["code"] == "budget_exceeded"
 
 
 class TestPipelineRetrieval:

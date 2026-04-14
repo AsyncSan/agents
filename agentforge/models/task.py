@@ -26,7 +26,15 @@ class Task(Base, TimestampMixin):
     )  # pending, authorized, dispatching, running, completed, failed
     callback_url: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    # Compute tier override
+    compute_tier: Mapped[str | None] = mapped_column(
+        String(20), nullable=True
+    )  # "container" or "vm" (overrides agent default)
+
     # Payment tracking
+    payment_rail: Mapped[str | None] = mapped_column(
+        String(20), nullable=True
+    )  # "stripe" or "solana"
     payment_intent_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     payment_status: Mapped[str | None] = mapped_column(
         String(50), nullable=True
@@ -34,6 +42,9 @@ class Task(Base, TimestampMixin):
     amount_authorized_cents: Mapped[int | None] = mapped_column(Integer, nullable=True)
     amount_captured_cents: Mapped[int | None] = mapped_column(Integer, nullable=True)
     platform_fee_cents: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # Solana-specific
+    solana_tx_signature: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    solana_escrow_address: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
     # Pipeline support
     pipeline_id: Mapped[str | None] = mapped_column(

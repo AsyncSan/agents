@@ -3,7 +3,7 @@
 import json
 from pathlib import Path
 
-CONFIG_DIR = Path.home() / ".agentforge"
+CONFIG_DIR = Path.home() / ".agents-cli"
 CONFIG_FILE = CONFIG_DIR / "config.json"
 
 

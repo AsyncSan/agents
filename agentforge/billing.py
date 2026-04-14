@@ -150,6 +150,182 @@ def refund_payment(task_id: str, payment_intent_id: str, reason: str = "") -> bo
         return False
 
 
+def create_checkout_session(
+    customer_id: str | None,
+    consumer_id: str,
+    success_url: str | None = None,
+    cancel_url: str | None = None,
+) -> dict | None:
+    """Create a Stripe Checkout Session for payment method setup.
+
+    Returns dict with session_id and url, or None if billing disabled.
+    """
+    if not _init_stripe():
+        return None
+
+    params: dict = {
+        "mode": "setup",
+        "payment_method_types": ["card"],
+        "success_url": success_url or settings.stripe_checkout_success_url,
+        "cancel_url": cancel_url or settings.stripe_checkout_cancel_url,
+        "metadata": {"consumer_id": consumer_id},
+    }
+    if customer_id:
+        params["customer"] = customer_id
+
+    try:
+        session = stripe.checkout.Session.create(**params)
+        log.info(f"Created checkout session {session.id} for consumer {consumer_id}")
+        return {
+            "session_id": session.id,
+            "url": session.url,
+        }
+    except stripe.StripeError as e:
+        log.error(f"Failed to create checkout session: {e}")
+        raise
+
+
+def create_connect_account(
+    provider_id: str,
+    email: str,
+    name: str,
+) -> dict | None:
+    """Create a Stripe Connect Express account for a provider.
+
+    Returns dict with account_id and onboarding_url.
+    """
+    if not _init_stripe():
+        return None
+
+    try:
+        account = stripe.Account.create(
+            type="express",
+            email=email,
+            metadata={
+                "provider_id": provider_id,
+                "platform": "agents.renemurrell.de",
+            },
+            capabilities={
+                "transfers": {"requested": True},
+            },
+        )
+
+        link = stripe.AccountLink.create(
+            account=account.id,
+            refresh_url=settings.stripe_connect_refresh_url,
+            return_url=settings.stripe_connect_return_url,
+            type="account_onboarding",
+        )
+
+        log.info(f"Created Connect account {account.id} for provider {provider_id}")
+        return {
+            "account_id": account.id,
+            "onboarding_url": link.url,
+        }
+    except stripe.StripeError as e:
+        log.error(f"Failed to create Connect account: {e}")
+        raise
+
+
+def create_connect_login_link(connect_account_id: str) -> str | None:
+    """Create a Stripe Connect Express dashboard login link."""
+    if not _init_stripe():
+        return None
+
+    try:
+        link = stripe.Account.create_login_link(connect_account_id)
+        return link.url
+    except stripe.StripeError as e:
+        log.error(f"Failed to create login link: {e}")
+        raise
+
+
+def get_connect_account_status(connect_account_id: str) -> dict | None:
+    """Get the status of a Stripe Connect account."""
+    if not _init_stripe():
+        return None
+
+    try:
+        account = stripe.Account.retrieve(connect_account_id)
+        return {
+            "account_id": account.id,
+            "charges_enabled": account.charges_enabled,
+            "payouts_enabled": account.payouts_enabled,
+            "details_submitted": account.details_submitted,
+            "requirements": {
+                "currently_due": list(account.requirements.currently_due or []),
+                "eventually_due": list(account.requirements.eventually_due or []),
+                "disabled_reason": account.requirements.disabled_reason,
+            },
+        }
+    except stripe.StripeError as e:
+        log.error(f"Failed to get Connect account status: {e}")
+        raise
+
+
+def transfer_to_provider(
+    task_id: str,
+    connect_account_id: str,
+    amount_cents: int,
+) -> dict:
+    """Transfer provider's share to their Connect account after capture."""
+    if not _init_stripe():
+        return {"transferred": False, "reason": "billing_disabled"}
+
+    try:
+        transfer = stripe.Transfer.create(
+            amount=amount_cents,
+            currency="usd",
+            destination=connect_account_id,
+            metadata={"task_id": task_id, "platform": "agents.renemurrell.de"},
+            idempotency_key=f"transfer-{task_id}",
+        )
+        log.info(
+            f"Transferred {amount_cents} cents to {connect_account_id} "
+            f"for task {task_id}: {transfer.id}"
+        )
+        return {"transferred": True, "transfer_id": transfer.id}
+    except stripe.StripeError as e:
+        log.error(f"Transfer failed for task {task_id}: {e}")
+        return {"transferred": False, "reason": str(e)}
+
+
+def list_payment_methods(customer_id: str) -> list[dict]:
+    """List all payment methods for a Stripe customer."""
+    if not _init_stripe():
+        return []
+
+    try:
+        methods = stripe.PaymentMethod.list(customer=customer_id, type="card")
+        return [
+            {
+                "id": pm.id,
+                "brand": pm.card.brand,
+                "last4": pm.card.last4,
+                "exp_month": pm.card.exp_month,
+                "exp_year": pm.card.exp_year,
+                "is_default": False,  # caller sets this
+            }
+            for pm in methods.data
+        ]
+    except stripe.StripeError as e:
+        log.error(f"Failed to list payment methods: {e}")
+        return []
+
+
+def delete_payment_method(payment_method_id: str) -> bool:
+    """Detach a payment method from a customer."""
+    if not _init_stripe():
+        return False
+
+    try:
+        stripe.PaymentMethod.detach(payment_method_id)
+        return True
+    except stripe.StripeError as e:
+        log.error(f"Failed to delete payment method: {e}")
+        return False
+
+
 def verify_webhook_signature(payload: bytes, sig_header: str) -> dict | None:
     """Verify Stripe webhook signature and return event dict."""
     if not settings.stripe_webhook_secret:

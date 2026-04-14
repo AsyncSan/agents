@@ -2,13 +2,14 @@
 
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy import String as SAString
 from sqlalchemy import cast, func, literal, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from agentforge.api.auth import require_role
+from agentforge.api.errors import APIError, ErrorCode
 from agentforge.api.schemas import (
     AgentCreateRequest,
     AgentHealthResponse,
@@ -187,7 +188,7 @@ async def agent_stats(
     result = await db.execute(select(Agent).where(Agent.id == agent_id))
     agent = result.scalar_one_or_none()
     if not agent:
-        raise HTTPException(status_code=404, detail="Agent not found")
+        raise APIError(404, ErrorCode.AGENT_NOT_FOUND, "Agent not found")
 
     # Total revenue from completed tasks
     revenue_result = await db.execute(
@@ -245,7 +246,7 @@ async def agent_health(
     result = await db.execute(select(Agent).where(Agent.id == agent_id))
     agent = result.scalar_one_or_none()
     if not agent:
-        raise HTTPException(status_code=404, detail="Agent not found")
+        raise APIError(404, ErrorCode.AGENT_NOT_FOUND, "Agent not found")
 
     now = datetime.now(timezone.utc)
     day_ago = now - timedelta(hours=24)
@@ -388,8 +389,112 @@ async def get_agent(agent_id: str, db: AsyncSession = Depends(get_db)):
     )
     agent = result.scalar_one_or_none()
     if not agent:
-        raise HTTPException(status_code=404, detail="Agent not found")
+        raise APIError(404, ErrorCode.AGENT_NOT_FOUND, "Agent not found")
     return _agent_to_response(agent)
+
+
+@router.get("/{agent_id}/compatible")
+async def compatible_agents(
+    agent_id: str,
+    direction: str = Query("downstream", pattern="^(downstream|upstream)$"),
+    limit: int = Query(10, ge=1, le=50),
+    db: AsyncSession = Depends(get_db),
+):
+    """Find agents compatible with this one for pipeline composition.
+
+    - downstream: agents whose inputs match this agent's outputs
+      (what can run AFTER this agent)
+    - upstream: agents whose outputs match this agent's inputs
+      (what can run BEFORE this agent)
+    """
+    result = await db.execute(
+        select(Agent)
+        .options(selectinload(Agent.provider))
+        .where(Agent.id == agent_id)
+    )
+    source = result.scalar_one_or_none()
+    if not source:
+        raise APIError(404, ErrorCode.AGENT_NOT_FOUND, "Agent not found")
+
+    source_caps = source.card.get("capabilities", {})
+
+    if direction == "downstream":
+        # This agent's outputs -> match other agents' inputs
+        source_types = {
+            o.get("type", "").lower()
+            for o in source_caps.get("outputs", [])
+        }
+        source_names = {
+            o.get("name", "").lower()
+            for o in source_caps.get("outputs", [])
+        }
+    else:
+        # This agent's inputs -> match other agents' outputs
+        source_types = {
+            i.get("type", "").lower()
+            for i in source_caps.get("inputs", [])
+        }
+        source_names = {
+            i.get("name", "").lower()
+            for i in source_caps.get("inputs", [])
+        }
+
+    # Get all active agents except self
+    all_result = await db.execute(
+        select(Agent)
+        .options(selectinload(Agent.provider))
+        .where(Agent.status == "active", Agent.id != agent_id)
+    )
+    candidates = all_result.scalars().all()
+
+    scored: list[tuple[float, Agent, list[str]]] = []
+    for candidate in candidates:
+        cand_caps = candidate.card.get("capabilities", {})
+
+        if direction == "downstream":
+            # Check if candidate's inputs can accept our outputs
+            cand_fields = cand_caps.get("inputs", [])
+        else:
+            # Check if candidate's outputs can feed our inputs
+            cand_fields = cand_caps.get("outputs", [])
+
+        matches = []
+        for field in cand_fields:
+            ft = field.get("type", "").lower()
+            fn = field.get("name", "").lower()
+            # Match by type or by name convention
+            if ft in source_types or fn in source_names:
+                matches.append(f"{field.get('name')} ({ft})")
+
+        if not matches:
+            # Check domain overlap as weak signal
+            if cand_caps.get("domain") == source_caps.get("domain"):
+                matches.append("same domain")
+                scored.append((0.3, candidate, matches))
+            continue
+
+        # Score: more matches + higher trust = better
+        match_score = min(1.0, len(matches) / max(1, len(cand_fields)))
+        trust_bonus = float(candidate.trust_score or 0) * 0.3
+        score = match_score * 0.7 + trust_bonus
+        scored.append((score, candidate, matches))
+
+    # Sort by score descending
+    scored.sort(key=lambda x: x[0], reverse=True)
+
+    return {
+        "agent_id": agent_id,
+        "direction": direction,
+        "compatible": [
+            {
+                "agent": _agent_to_response(agent),
+                "compatibility_score": round(score, 2),
+                "matching_fields": matches,
+            }
+            for score, agent, matches in scored[:limit]
+        ],
+        "total": len(scored),
+    }
 
 
 @router.post("", response_model=AgentResponse, status_code=201)
@@ -402,7 +507,7 @@ async def create_agent(
     # Check for duplicate ID
     existing = await db.execute(select(Agent).where(Agent.id == req.id))
     if existing.scalar_one_or_none():
-        raise HTTPException(status_code=409, detail="Agent ID already exists")
+        raise APIError(409, ErrorCode.ALREADY_EXISTS, "Agent ID already exists")
 
     card = {
         "kind": "AgentCapabilityCard",
@@ -467,9 +572,9 @@ async def update_agent(
     result = await db.execute(select(Agent).where(Agent.id == agent_id))
     agent = result.scalar_one_or_none()
     if not agent:
-        raise HTTPException(status_code=404, detail="Agent not found")
+        raise APIError(404, ErrorCode.AGENT_NOT_FOUND, "Agent not found")
     if agent.provider_id != user["id"]:
-        raise HTTPException(status_code=403, detail="Not your agent")
+        raise APIError(403, ErrorCode.FORBIDDEN, "Not your agent")
 
     # Archive current version before overwriting
     archive = AgentVersion(
@@ -539,9 +644,9 @@ async def delete_agent(
     result = await db.execute(select(Agent).where(Agent.id == agent_id))
     agent = result.scalar_one_or_none()
     if not agent:
-        raise HTTPException(status_code=404, detail="Agent not found")
+        raise APIError(404, ErrorCode.AGENT_NOT_FOUND, "Agent not found")
     if agent.provider_id != user["id"]:
-        raise HTTPException(status_code=403, detail="Not your agent")
+        raise APIError(403, ErrorCode.FORBIDDEN, "Not your agent")
     agent.status = "deprecated"
     await emit_event(
         db,
@@ -562,7 +667,7 @@ async def verify_agent(agent_id: str, db: AsyncSession = Depends(get_db)):
     )
     agent = result.scalar_one_or_none()
     if not agent:
-        raise HTTPException(status_code=404, detail="Agent not found")
+        raise APIError(404, ErrorCode.AGENT_NOT_FOUND, "Agent not found")
 
     if not agent.signature:
         return {"verified": False, "reason": "no_signature", "agent_id": agent_id}
@@ -583,18 +688,22 @@ async def verify_agent(agent_id: str, db: AsyncSession = Depends(get_db)):
 @router.get("/{agent_id}/versions", response_model=AgentVersionListResponse)
 async def list_agent_versions(
     agent_id: str,
+    offset: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
 ):
     """List all archived versions of an agent's capability card."""
     result = await db.execute(select(Agent).where(Agent.id == agent_id))
     agent = result.scalar_one_or_none()
     if not agent:
-        raise HTTPException(status_code=404, detail="Agent not found")
+        raise APIError(404, ErrorCode.AGENT_NOT_FOUND, "Agent not found")
 
     result = await db.execute(
         select(AgentVersion)
         .where(AgentVersion.agent_id == agent_id)
         .order_by(AgentVersion.version.desc())
+        .offset(offset)
+        .limit(limit)
     )
     versions = [
         AgentVersionResponse(

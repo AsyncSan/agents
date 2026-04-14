@@ -4,12 +4,13 @@ import hashlib
 import secrets
 from datetime import datetime, timedelta, timezone
 
-from fastapi import Depends, HTTPException, Security
+from fastapi import Depends, Security
 from fastapi.security import APIKeyHeader
 from jose import jwt
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from agentforge.api.errors import APIError, ErrorCode
 from agentforge.config import settings
 from agentforge.db import get_db
 from agentforge.models.consumer import Consumer
@@ -55,13 +56,13 @@ async def get_current_user(
     if consumer:
         return {"id": consumer.id, "role": "consumer", "name": consumer.name}
 
-    raise HTTPException(status_code=401, detail="Invalid API key")
+    raise APIError(401, ErrorCode.INVALID_API_KEY, "Invalid API key")
 
 
-def require_role(role: str):
-    """Dependency that checks the user has a specific role."""
+def require_role(role: str | None = None):
+    """Dependency that checks the user has a specific role. None = any role."""
     async def check(user: dict = Depends(get_current_user)):
-        if user["role"] != role:
-            raise HTTPException(status_code=403, detail=f"Requires {role} role")
+        if role and user["role"] != role:
+            raise APIError(403, ErrorCode.ROLE_REQUIRED, f"Requires {role} role")
         return user
     return check

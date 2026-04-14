@@ -19,7 +19,7 @@ class TestPaymentSetup:
             json={"payment_method_id": "pm_test_fake"},
         )
         assert resp.status_code == 503
-        assert "not configured" in resp.json()["detail"].lower()
+        assert resp.json()["error"]["code"] == "billing_not_configured"
 
     @pytest.mark.asyncio
     async def test_payment_status_no_stripe(self, client: AsyncClient, consumer_key):

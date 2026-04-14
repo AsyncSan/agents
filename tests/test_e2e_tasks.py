@@ -67,7 +67,7 @@ class TestTaskSubmission:
             },
         )
         assert resp.status_code == 400
-        assert "exceeds budget" in resp.json()["detail"]
+        assert resp.json()["error"]["code"] == "budget_exceeded"
 
     @pytest.mark.asyncio
     async def test_budget_enforcement_accepts(self, client: AsyncClient, consumer_key, seed_agent):

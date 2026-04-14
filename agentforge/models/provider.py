@@ -21,6 +21,15 @@ class Provider(Base, TimestampMixin):
     signing_public_key: Mapped[str | None] = mapped_column(Text, nullable=True)
     signing_private_key: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    # Stripe Connect (provider payouts)
+    stripe_connect_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    stripe_connect_status: Mapped[str | None] = mapped_column(
+        String(50), nullable=True
+    )  # pending, active, restricted, disabled
+
+    # Solana wallet for crypto payouts
+    solana_wallet: Mapped[str | None] = mapped_column(String(64), nullable=True)
+
     # Provider secrets injected into ephemeral servers at /workspace/secrets/provider/
     # Format: {"ANTHROPIC_API_KEY": "sk-...", "GH_TOKEN": "ghp_..."}
     secrets: Mapped[dict | None] = mapped_column(JSONB, nullable=True)

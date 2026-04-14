@@ -3,11 +3,12 @@
 from datetime import datetime, timezone
 
 from croniter import croniter
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query, Response
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from agentforge.api.auth import require_role
+from agentforge.api.errors import APIError, ErrorCode
 from agentforge.api.schemas import (
     ScheduleCreateRequest,
     ScheduleListResponse,
@@ -48,9 +49,13 @@ def _schedule_to_response(s: Schedule) -> ScheduleResponse:
     )
 
 
+_SCHEDULE_LIMIT = 20
+
+
 @router.post("", response_model=ScheduleResponse, status_code=201)
 async def create_schedule(
     req: ScheduleCreateRequest,
+    response: Response,
     user: dict = Depends(require_role("consumer")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -59,31 +64,39 @@ async def create_schedule(
     try:
         croniter(req.cron_expression)
     except (ValueError, KeyError):
-        raise HTTPException(status_code=422, detail="Invalid cron expression")
+        raise APIError(422, ErrorCode.INVALID_CRON, "Invalid cron expression")
 
     # Verify agent exists and is active
     agent_result = await db.execute(select(Agent).where(Agent.id == req.agent_id))
     agent = agent_result.scalar_one_or_none()
     if not agent or agent.status != "active":
-        raise HTTPException(status_code=404, detail="Agent not found or inactive")
+        raise APIError(404, ErrorCode.AGENT_NOT_FOUND, "Agent not found or inactive")
 
     # Budget check
     agent_price = agent.card.get("pricing", {}).get("base_price_usd", 0)
     budget_cap = req.constraints.max_cost_usd
     if budget_cap is not None and agent_price > budget_cap:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Agent price ${agent_price:.2f} exceeds budget ${budget_cap:.2f}",
+        raise APIError(
+            400, ErrorCode.BUDGET_EXCEEDED,
+            f"Agent price ${agent_price:.2f} exceeds budget ${budget_cap:.2f}",
+            {"agent_price_usd": agent_price, "budget_cap_usd": budget_cap},
         )
 
-    # Limit to 20 active schedules per consumer
+    # Limit active schedules per consumer
     count_result = await db.execute(
         select(func.count())
         .select_from(Schedule)
         .where(Schedule.consumer_id == user["id"], Schedule.active.is_(True))
     )
-    if (count_result.scalar() or 0) >= 20:
-        raise HTTPException(status_code=429, detail="Maximum 20 active schedules")
+    current_count = count_result.scalar() or 0
+    if current_count >= _SCHEDULE_LIMIT:
+        raise APIError(
+            429, ErrorCode.RATE_LIMIT,
+            f"Maximum {_SCHEDULE_LIMIT} active schedules",
+            {"limit": _SCHEDULE_LIMIT, "current": current_count},
+        )
+    response.headers["X-RateLimit-Limit"] = str(_SCHEDULE_LIMIT)
+    response.headers["X-RateLimit-Remaining"] = str(_SCHEDULE_LIMIT - current_count - 1)
 
     next_run = _compute_next_run(req.cron_expression, req.timezone)
 
@@ -156,9 +169,9 @@ async def get_schedule(
     result = await db.execute(select(Schedule).where(Schedule.id == schedule_id))
     schedule = result.scalar_one_or_none()
     if not schedule:
-        raise HTTPException(status_code=404, detail="Schedule not found")
+        raise APIError(404, ErrorCode.SCHEDULE_NOT_FOUND, "Schedule not found")
     if schedule.consumer_id != user["id"]:
-        raise HTTPException(status_code=403, detail="Not your schedule")
+        raise APIError(403, ErrorCode.FORBIDDEN, "Not your schedule")
     return _schedule_to_response(schedule)
 
 
@@ -172,9 +185,9 @@ async def pause_schedule(
     result = await db.execute(select(Schedule).where(Schedule.id == schedule_id))
     schedule = result.scalar_one_or_none()
     if not schedule:
-        raise HTTPException(status_code=404, detail="Schedule not found")
+        raise APIError(404, ErrorCode.SCHEDULE_NOT_FOUND, "Schedule not found")
     if schedule.consumer_id != user["id"]:
-        raise HTTPException(status_code=403, detail="Not your schedule")
+        raise APIError(403, ErrorCode.FORBIDDEN, "Not your schedule")
     schedule.active = False
     await db.commit()
     await db.refresh(schedule)
@@ -191,9 +204,9 @@ async def resume_schedule(
     result = await db.execute(select(Schedule).where(Schedule.id == schedule_id))
     schedule = result.scalar_one_or_none()
     if not schedule:
-        raise HTTPException(status_code=404, detail="Schedule not found")
+        raise APIError(404, ErrorCode.SCHEDULE_NOT_FOUND, "Schedule not found")
     if schedule.consumer_id != user["id"]:
-        raise HTTPException(status_code=403, detail="Not your schedule")
+        raise APIError(403, ErrorCode.FORBIDDEN, "Not your schedule")
     schedule.active = True
     schedule.next_run_at = _compute_next_run(schedule.cron_expression, schedule.timezone)
     await db.commit()
@@ -211,9 +224,9 @@ async def delete_schedule(
     result = await db.execute(select(Schedule).where(Schedule.id == schedule_id))
     schedule = result.scalar_one_or_none()
     if not schedule:
-        raise HTTPException(status_code=404, detail="Schedule not found")
+        raise APIError(404, ErrorCode.SCHEDULE_NOT_FOUND, "Schedule not found")
     if schedule.consumer_id != user["id"]:
-        raise HTTPException(status_code=403, detail="Not your schedule")
+        raise APIError(403, ErrorCode.FORBIDDEN, "Not your schedule")
     schedule.active = False
     await emit_event(
         db,
