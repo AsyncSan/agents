@@ -12,6 +12,7 @@ class RegisterRequest(BaseModel):
     name: str = Field(min_length=2, max_length=255)
     email: EmailStr
     role: str = Field(pattern="^(provider|consumer)$")
+    password: str | None = Field(default=None, min_length=8, max_length=128)
 
 
 class RegisterResponse(BaseModel):
@@ -21,6 +22,19 @@ class RegisterResponse(BaseModel):
     role: str
     api_key: str  # returned only once on registration
     signing_public_key: str | None = None  # providers only, for card verification
+
+
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str = Field(min_length=1, max_length=128)
+
+
+class LoginResponse(BaseModel):
+    id: UUID
+    name: str
+    email: str
+    role: str
+    api_key: str  # a fresh key minted on login (password auth is key issuance)
 
 
 class TokenResponse(BaseModel):
@@ -81,6 +95,11 @@ class AgentCreateRequest(BaseModel):
     runtime: AgentRuntime = AgentRuntime()
     pricing: AgentPricing = AgentPricing()
     instructions: str  # the actual agent prompt/instructions
+    risk_class: str = Field(
+        default="minimal",
+        pattern="^(minimal|limited|high)$",
+        description="EU AI Act risk classification (Art. 6/9)",
+    )
 
 
 class AgentResponse(BaseModel):
@@ -344,11 +363,57 @@ class WebhookCreateRequest(BaseModel):
         min_length=1,
         description="Event types to subscribe to. Use '*' for all events.",
     )
+    webhook_type: str = Field(
+        default="generic",
+        pattern="^(generic|slack|splunk_hec|datadog_logs|jira|linear)$",
+        description=(
+            "Payload format. 'generic' (HMAC signed), 'slack' (Block Kit), "
+            "'splunk_hec' (Splunk HTTP Event Collector), "
+            "'datadog_logs' (Datadog Logs intake), "
+            "'jira' / 'linear' (create issue on every event)."
+        ),
+    )
+    secret_override: str | None = Field(
+        default=None,
+        description=(
+            "Only required for non-generic types that need a service credential."
+            " Slack: omit. Splunk HEC: HEC token. Datadog: API key."
+            " Jira: '<PROJECT_KEY>|<email>:<api_token>'."
+            " Linear: '<TEAM_ID>|<api_key>'."
+        ),
+    )
 
     @field_validator("url")
     @classmethod
-    def validate_webhook_url(cls, v: str) -> str:
-        if not v.startswith("https://"):
+    def validate_webhook_url(cls, v: str, info) -> str:
+        wh_type = info.data.get("webhook_type", "generic")
+        if wh_type == "slack":
+            if not v.startswith("https://hooks.slack.com/"):
+                raise ValueError("Slack webhook URL must start with https://hooks.slack.com/")
+        elif wh_type == "datadog_logs":
+            if not (
+                v.startswith("https://http-intake.logs.")
+                and "datadoghq" in v
+            ):
+                raise ValueError(
+                    "Datadog URL must start with https://http-intake.logs.<site>.datadoghq.* "
+                    "(e.g. https://http-intake.logs.datadoghq.eu/api/v2/logs)"
+                )
+        elif wh_type == "splunk_hec":
+            if not v.startswith("https://") or "/services/collector" not in v:
+                raise ValueError(
+                    "Splunk HEC URL must be HTTPS and include /services/collector"
+                )
+        elif wh_type == "jira":
+            if not v.startswith("https://") or "/rest/api/" not in v:
+                raise ValueError(
+                    "Jira URL must be the Cloud REST API issue endpoint "
+                    "(e.g. https://<workspace>.atlassian.net/rest/api/3/issue)"
+                )
+        elif wh_type == "linear":
+            if v != "https://api.linear.app/graphql":
+                raise ValueError("Linear URL must be https://api.linear.app/graphql")
+        elif not v.startswith("https://"):
             raise ValueError("Webhook URL must use HTTPS")
         return v
 

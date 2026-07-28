@@ -2,12 +2,11 @@
 
 Decouples webhook delivery from the request/event path. Events are
 enqueued and delivered in a background loop with exponential backoff.
+Payload formatting for generic / Slack / Splunk HEC / Datadog /
+Jira / Linear lives in ``agentforge.webhook_formatters``.
 """
 
 import asyncio
-import hashlib
-import hmac
-import json
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -16,6 +15,7 @@ import httpx
 from sqlalchemy import update
 
 from agentforge.models.webhook import Webhook
+from agentforge.webhook_formatters import format_payload
 
 log = logging.getLogger("agentforge.webhook_delivery")
 
@@ -31,6 +31,7 @@ class WebhookJob:
     secret: str
     body: dict
     event_type: str
+    webhook_type: str = "generic"
     attempt: int = 0
     next_retry_at: float = 0.0
 
@@ -97,21 +98,23 @@ class WebhookQueue:
 
     async def _deliver(self, job: WebhookJob, get_session) -> None:
         """Attempt to deliver a single webhook. Retries on failure."""
-        body_bytes = json.dumps(job.body, default=str).encode()
-        signature = hmac.new(
-            job.secret.encode(), body_bytes, hashlib.sha256
-        ).hexdigest()
+        try:
+            body_bytes, headers = format_payload(
+                job.webhook_type, job.body, job.event_type, job.secret
+            )
+        except ValueError as e:
+            log.warning(
+                f"Webhook {job.webhook_id} ({job.webhook_type}) formatter error: {e}"
+            )
+            self._schedule_retry(job, f"formatter: {e}")
+            return
 
         try:
             async with httpx.AsyncClient(timeout=DELIVERY_TIMEOUT) as client:
                 resp = await client.post(
                     job.url,
                     content=body_bytes,
-                    headers={
-                        "Content-Type": "application/json",
-                        "X-Webhook-Signature": f"sha256={signature}",
-                        "X-Webhook-Event": job.event_type,
-                    },
+                    headers=headers,
                 )
 
             if resp.status_code < 400:

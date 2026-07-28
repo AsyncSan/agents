@@ -76,12 +76,24 @@ async def create_webhook(
     response.headers["X-RateLimit-Limit"] = str(_WEBHOOK_LIMIT)
     response.headers["X-RateLimit-Remaining"] = str(_WEBHOOK_LIMIT - current_count - 1)
 
-    webhook_secret = f"whsec_{secrets.token_urlsafe(32)}"
+    # For third-party integrations, the ``secret`` field holds the service
+    # credential rather than our HMAC signing secret. Fall back to a generated
+    # HMAC secret if the caller didn't supply one.
+    if req.secret_override and req.webhook_type in {
+        "splunk_hec",
+        "datadog_logs",
+        "jira",
+        "linear",
+    }:
+        webhook_secret = req.secret_override
+    else:
+        webhook_secret = f"whsec_{secrets.token_urlsafe(32)}"
 
     webhook = Webhook(
         owner_id=user["id"],
         owner_role=user["role"],
         url=req.url,
+        webhook_type=req.webhook_type,
         secret=webhook_secret,
         event_types=req.event_types,
     )

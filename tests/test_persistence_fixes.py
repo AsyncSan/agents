@@ -304,10 +304,11 @@ class TestAsyncEventEmission:
 class TestCleanup:
     @pytest.mark.asyncio
     async def test_cleanup_old_events(self, db_session: AsyncSession):
-        """Old event log entries are pruned."""
+        """Old event log entries are pruned. Retention floor enforced per Art. 19."""
         from agentforge.models.event_log import EventLog
 
-        old_date = datetime.now(timezone.utc) - timedelta(days=100)
+        # 200 days old, older than the Art. 19 floor of 180 days
+        old_date = datetime.now(timezone.utc) - timedelta(days=200)
         old_event = EventLog(
             event_type="test.old",
             created_at=old_date,
@@ -318,10 +319,7 @@ class TestCleanup:
 
         from agentforge.cleanup import cleanup_old_events
 
-        with patch("agentforge.cleanup.settings") as mock_settings:
-            mock_settings.event_log_retention_days = 90
-            deleted = await cleanup_old_events(db=db_session)
-
+        deleted = await cleanup_old_events(db=db_session)
         assert deleted >= 1
 
     @pytest.mark.asyncio
@@ -339,9 +337,7 @@ class TestCleanup:
 
         from agentforge.cleanup import cleanup_old_events
 
-        with patch("agentforge.cleanup.settings") as mock_settings:
-            mock_settings.event_log_retention_days = 90
-            await cleanup_old_events(db=db_session)
+        await cleanup_old_events(db=db_session)
 
         # Recent event should still exist
         result = await db_session.execute(
@@ -350,12 +346,13 @@ class TestCleanup:
         assert result.scalar_one_or_none() is not None
 
     def test_retention_config_defaults(self):
-        """Retention settings have sensible defaults."""
+        """Retention settings default to the Art. 19 floor (180 days)."""
         from agentforge.config import Settings
 
         s = Settings()
-        assert s.results_retention_days == 30
-        assert s.event_log_retention_days == 90
+        assert s.results_retention_days == 180
+        assert s.event_log_retention_days == 180
+        assert s.compliance_docs_retention_days == 3650  # Art. 18: 10 years
 
 
 # --- Eager Loading Fix ---

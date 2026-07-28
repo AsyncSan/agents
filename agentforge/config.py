@@ -59,9 +59,13 @@ class Settings(BaseSettings):
     max_concurrent_agents: int = 5
     default_task_timeout: int = 1800
 
-    # Retention
-    results_retention_days: int = 30
-    event_log_retention_days: int = 90
+    # Retention (EU AI Act Art. 19: high-risk systems require min. 6 months)
+    # Event log is the regulatory audit trail. Result files are the payload.
+    results_retention_days: int = 180
+    event_log_retention_days: int = 180
+    # Art. 18 requires 10 years for technical docs, QMS, declarations.
+    # That retention lives in the evidence-pack storage, not the rolling log.
+    compliance_docs_retention_days: int = 3650
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 

@@ -23,6 +23,8 @@ EVENT_TYPES = [
     "agent.updated",
     "agent.deleted",
     "task.created",
+    "task.awaiting_approval",
+    "task.approved",
     "task.dispatching",
     "task.completed",
     "task.failed",
@@ -102,6 +104,7 @@ async def _enqueue_deliveries(db: AsyncSession, event: EventLog) -> None:
                 secret=wh.secret,
                 body=body,
                 event_type=event.event_type,
+                webhook_type=getattr(wh, "webhook_type", "generic") or "generic",
             )
         )
 

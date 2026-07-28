@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import Boolean, DateTime, String, Text
-from sqlalchemy.dialects.postgresql import ARRAY, UUID
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from agentforge.models.base import Base, TimestampMixin
@@ -22,6 +22,9 @@ class Webhook(Base, TimestampMixin):
     owner_role: Mapped[str] = mapped_column(String(50), nullable=False)  # consumer, provider
 
     url: Mapped[str] = mapped_column(Text, nullable=False)
+    webhook_type: Mapped[str] = mapped_column(
+        String(50), default="generic"
+    )  # generic, slack
     secret: Mapped[str] = mapped_column(
         String(255), nullable=False
     )  # HMAC signing secret for payload verification

@@ -7,11 +7,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Query
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import JSONResponse, PlainTextResponse, Response
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from agentforge.api.auth import get_current_user, require_role
+from agentforge.api.auth import get_current_user, require_role, require_scope
 from agentforge.api.errors import APIError, ErrorCode
 from agentforge.api.schemas import (
     ExecutionResponse,
@@ -19,10 +19,21 @@ from agentforge.api.schemas import (
     TaskListResponse,
     TaskResponse,
 )
+from agentforge.billing import get_plan_limits
 from agentforge.db import get_db
+from agentforge.events import emit_event
+from agentforge.evidence_pack import build_evidence_pack
 from agentforge.models.agent import Agent
+from agentforge.models.consumer import Consumer
+from agentforge.models.event_log import EventLog
 from agentforge.models.execution import Execution
 from agentforge.models.task import Task
+from agentforge.provenance import (
+    build_provenance,
+    provenance_headers,
+    wrap_json,
+    wrap_markdown,
+)
 
 router = APIRouter(prefix="/v1/tasks", tags=["tasks"])
 
@@ -68,6 +79,12 @@ async def create_task(
     db: AsyncSession = Depends(get_db),
 ):
     """Submit a new task contract for an agent."""
+    # Scope check: read-only keys cannot create tasks
+    from agentforge.api.auth import SCOPE_LEVELS
+    user_scope = user.get("scope", "admin")
+    if SCOPE_LEVELS.get(user_scope, 2) < SCOPE_LEVELS["execute"]:
+        raise APIError(403, ErrorCode.FORBIDDEN, "Read-only API key cannot create tasks")
+
     # Verify agent exists and is active
     result = await db.execute(select(Agent).where(Agent.id == req.agent_id))
     agent = result.scalar_one_or_none()
@@ -84,6 +101,33 @@ async def create_task(
             {"agent_price_usd": agent_price, "budget_cap_usd": budget_cap},
         )
 
+    # Plan enforcement: check concurrent task limit
+    consumer_result = await db.execute(
+        select(Consumer).where(Consumer.id == user["id"])
+    )
+    consumer = consumer_result.scalar_one_or_none()
+    plan_limits = get_plan_limits(consumer.plan if consumer else "starter")
+
+    concurrent_result = await db.execute(
+        select(func.count())
+        .select_from(Task)
+        .where(
+            Task.consumer_id == user["id"],
+            Task.status.in_(["pending", "dispatching", "running"]),
+        )
+    )
+    concurrent = concurrent_result.scalar() or 0
+    max_concurrent = int(plan_limits["max_concurrent"])
+
+    if concurrent >= max_concurrent:
+        raise APIError(
+            429,
+            ErrorCode.PLAN_LIMIT_EXCEEDED,
+            f"Your {consumer.plan if consumer else 'starter'} plan allows {max_concurrent} concurrent tasks. "
+            f"Currently {concurrent} active.",
+            {"plan": consumer.plan if consumer else "starter", "limit": max_concurrent, "active": concurrent},
+        )
+
     # Timeout enforcement: cap at agent's max, floor at 60s
     caps = agent.card.get("capabilities", {}).get("constraints", {})
     agent_timeout_max = caps.get("timeout_max", 3600)
@@ -98,6 +142,10 @@ async def create_task(
         "max_cost_usd": req.constraints.max_cost_usd,
     }
 
+    # High-risk agents require human approval before execution (EU AI Act Art. 14)
+    risk_class = agent.risk_class if hasattr(agent, "risk_class") else "minimal"
+    initial_status = "awaiting_approval" if risk_class == "high" else "pending"
+
     task = Task(
         id=_generate_task_id(),
         consumer_id=user["id"],
@@ -107,11 +155,30 @@ async def create_task(
         callback_url=req.callback_url,
         compute_tier=req.compute_tier,
         payment_rail=req.payment_rail,
-        status="pending",
+        status=initial_status,
     )
     db.add(task)
     await db.commit()
     await db.refresh(task)
+
+    # Pre-execution webhook for approval-gated tasks
+    if initial_status == "awaiting_approval":
+        await emit_event(
+            db,
+            "task.awaiting_approval",
+            actor_id=str(user["id"]),
+            actor_role="consumer",
+            resource_type="task",
+            resource_id=task.id,
+            payload={
+                "agent_id": req.agent_id,
+                "risk_class": risk_class,
+                "inputs": req.inputs,
+                "requires_approval": True,
+                "approve_url": f"/v1/tasks/{task.id}/approve",
+            },
+        )
+        await db.commit()
 
     return _task_to_response(task)
 
@@ -256,13 +323,114 @@ async def get_task_result(
         raise APIError(404, ErrorCode.FILE_NOT_FOUND, f"File '{file}' not found")
 
     content = file_path.read_text(encoding="utf-8", errors="replace")
+
+    agent_result = await db.execute(select(Agent).where(Agent.id == task.agent_id))
+    agent = agent_result.scalar_one_or_none()
+    provenance = (
+        build_provenance(task, agent, execution) if agent is not None else None
+    )
+
+    if provenance is not None:
+        if file.endswith(".md"):
+            content = wrap_markdown(content, provenance)
+        elif file.endswith(".json"):
+            content = wrap_json(content, provenance)
+
+    headers = provenance_headers(provenance) if provenance is not None else {}
     media = "application/json" if file.endswith(".json") else "text/plain"
-    return PlainTextResponse(content=content, media_type=media)
+    return PlainTextResponse(content=content, media_type=media, headers=headers)
+
+
+@router.get("/{task_id}/provenance")
+async def get_task_provenance(
+    task_id: str,
+    user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Return the EU AI Act Art. 50 provenance record for a task result.
+
+    Machine-readable proof that the content was AI-generated, identifying the
+    agent, version, risk class, and execution. Also returned as X-AI-*
+    headers alongside the raw result in ``/result``.
+    """
+    result = await db.execute(select(Task).where(Task.id == task_id))
+    task = result.scalar_one_or_none()
+    if not task:
+        raise APIError(404, ErrorCode.TASK_NOT_FOUND, "Task not found")
+    await _check_task_access(task, user, db)
+
+    agent_result = await db.execute(select(Agent).where(Agent.id == task.agent_id))
+    agent = agent_result.scalar_one_or_none()
+    if agent is None:
+        raise APIError(404, ErrorCode.TASK_NOT_FOUND, "Agent not found")
+
+    execution_result = await db.execute(
+        select(Execution)
+        .where(Execution.task_id == task_id)
+        .order_by(Execution.created_at.desc())
+        .limit(1)
+    )
+    execution = execution_result.scalar_one_or_none()
+
+    provenance = build_provenance(task, agent, execution)
+    return JSONResponse(content=provenance, headers=provenance_headers(provenance))
+
+
+@router.get("/{task_id}/evidence-pack")
+async def get_task_evidence_pack(
+    task_id: str,
+    user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Download a per-task evidence pack as a ZIP archive.
+
+    Bundle contents (mapped to the EU AI Act):
+      * README + manifest
+      * task.json, capability_card.json (Art. 12 / 13)
+      * provenance.json (Art. 50)
+      * event_log.json (Art. 12 / 19)
+      * execution.json + output/* when available
+    """
+    result = await db.execute(select(Task).where(Task.id == task_id))
+    task = result.scalar_one_or_none()
+    if not task:
+        raise APIError(404, ErrorCode.TASK_NOT_FOUND, "Task not found")
+    await _check_task_access(task, user, db)
+
+    agent_result = await db.execute(select(Agent).where(Agent.id == task.agent_id))
+    agent = agent_result.scalar_one_or_none()
+    if agent is None:
+        raise APIError(404, ErrorCode.TASK_NOT_FOUND, "Agent not found")
+
+    execution_result = await db.execute(
+        select(Execution)
+        .where(Execution.task_id == task_id)
+        .order_by(Execution.created_at.desc())
+        .limit(1)
+    )
+    execution = execution_result.scalar_one_or_none()
+
+    events_result = await db.execute(
+        select(EventLog)
+        .where(EventLog.resource_type == "task", EventLog.resource_id == task_id)
+        .order_by(EventLog.created_at.asc())
+    )
+    events = list(events_result.scalars().all())
+
+    results_dir = Path(execution.results_path) if execution and execution.results_path else None
+    zip_bytes = build_evidence_pack(task, agent, execution, events, results_dir)
+
+    filename = f"evidence-pack-{task.id}.zip"
+    headers = {
+        "Content-Disposition": f'attachment; filename="{filename}"',
+        **provenance_headers(build_provenance(task, agent, execution)),
+    }
+    return Response(content=zip_bytes, media_type="application/zip", headers=headers)
 
 
 log = logging.getLogger("agentforge.tasks")
 
-_CANCELLABLE_STATUSES = {"pending", "running"}
+_CANCELLABLE_STATUSES = {"pending", "running", "awaiting_approval", "dispatching"}
 
 
 @router.post("/{task_id}/cancel", response_model=TaskResponse)
@@ -328,3 +496,47 @@ async def _destroy_server_async(server_id: str) -> None:
             log.warning(f"Failed to destroy server {server_id}: {stderr.decode()}")
     except Exception as e:
         log.error(f"Error destroying server {server_id}: {e}")
+
+
+@router.post("/{task_id}/approve", response_model=TaskResponse)
+async def approve_task(
+    task_id: str,
+    user: dict = Depends(require_role("consumer")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Approve a task that requires human review (EU AI Act Art. 14).
+
+    High-risk agent tasks start in 'awaiting_approval' and must be
+    explicitly approved before the dispatch worker picks them up.
+    """
+    result = await db.execute(select(Task).where(Task.id == task_id))
+    task = result.scalar_one_or_none()
+    if not task:
+        raise APIError(404, ErrorCode.TASK_NOT_FOUND, "Task not found")
+
+    if task.consumer_id != user["id"]:
+        raise APIError(403, ErrorCode.FORBIDDEN, "Not your task")
+
+    if task.status != "awaiting_approval":
+        raise APIError(
+            409, ErrorCode.TASK_NOT_APPROVABLE,
+            f"Task status '{task.status}' is not awaiting approval",
+            {"current_status": task.status},
+        )
+
+    task.status = "pending"
+    await db.commit()
+
+    await emit_event(
+        db,
+        "task.approved",
+        actor_id=str(user["id"]),
+        actor_role="consumer",
+        resource_type="task",
+        resource_id=task.id,
+        payload={"agent_id": task.agent_id},
+    )
+    await db.commit()
+
+    await db.refresh(task)
+    return _task_to_response(task)

@@ -29,6 +29,9 @@ class ErrorCode(str, Enum):
     USER_NOT_FOUND = "user_not_found"
     RESULT_NOT_FOUND = "result_not_found"
     FILE_NOT_FOUND = "file_not_found"
+    MODULE_NOT_FOUND = "module_not_found"
+    DOCUMENT_NOT_FOUND = "document_not_found"
+    INCIDENT_NOT_FOUND = "incident_not_found"
 
     # Conflict (409)
     ALREADY_EXISTS = "already_exists"
@@ -47,6 +50,8 @@ class ErrorCode(str, Enum):
 
     # Rate Limits (429)
     RATE_LIMIT = "rate_limit"
+    PLAN_LIMIT_EXCEEDED = "plan_limit_exceeded"
+    TASK_NOT_APPROVABLE = "task_not_approvable"
 
     # Payment (400, 502, 503)
     BILLING_NOT_CONFIGURED = "billing_not_configured"

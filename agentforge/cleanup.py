@@ -1,6 +1,11 @@
 """Background cleanup: prune old results and event logs.
 
 Runs as an asyncio background task alongside the API server.
+
+Retention policy is tied to EU AI Act Art. 19: high-risk AI systems must
+keep automatic logs for at least 6 months (180 days). Defaults in
+``config.py`` reflect that floor. Operators may extend via environment
+variables but must not drop below 180 days for the event log.
 """
 
 import asyncio
@@ -71,12 +76,34 @@ async def cleanup_old_results() -> int:
     return removed
 
 
+AI_ACT_MIN_LOG_RETENTION_DAYS = 180
+
+
+def enforce_ai_act_retention_floor() -> int:
+    """Return the effective event log retention, floor-clamped to Art. 19.
+
+    Art. 19 requires high-risk AI systems to retain automatic logs for at
+    least 6 months. If configuration drops below that, we log a warning and
+    use the floor.
+    """
+    configured = settings.event_log_retention_days
+    if configured < AI_ACT_MIN_LOG_RETENTION_DAYS:
+        log.warning(
+            "event_log_retention_days=%d is below EU AI Act Art. 19 floor "
+            "of %d days; enforcing the floor",
+            configured,
+            AI_ACT_MIN_LOG_RETENTION_DAYS,
+        )
+        return AI_ACT_MIN_LOG_RETENTION_DAYS
+    return configured
+
+
 async def cleanup_old_events(db: AsyncSession | None = None) -> int:
     """Delete event log entries older than retention period.
 
     Returns number of events deleted.
     """
-    cutoff = datetime.now(timezone.utc) - timedelta(days=settings.event_log_retention_days)
+    cutoff = datetime.now(timezone.utc) - timedelta(days=enforce_ai_act_retention_floor())
 
     async def _run(session: AsyncSession) -> int:
         result = await session.execute(

@@ -524,6 +524,7 @@ async def create_agent(
         "runtime": req.runtime.model_dump(),
         "pricing": req.pricing.model_dump(),
         "instructions": req.instructions,
+        "risk_class": req.risk_class,
     }
 
     # Sign the card if provider has a signing key
@@ -542,6 +543,7 @@ async def create_agent(
         description=req.description,
         card=card,
         signature=signature,
+        risk_class=req.risk_class,
     )
     db.add(agent)
     await db.commit()
@@ -603,6 +605,7 @@ async def update_agent(
         "runtime": req.runtime.model_dump(),
         "pricing": req.pricing.model_dump(),
         "instructions": req.instructions,
+        "risk_class": req.risk_class,
     }
 
     # Re-sign on update
@@ -613,10 +616,24 @@ async def update_agent(
     if provider and provider.signing_private_key:
         agent.signature = sign_card(card, provider.signing_private_key)
 
+    from agentforge.api.routes_modifications import auto_log_version_bump
+
+    old_card = dict(agent.card) if agent.card else {}
+    modification = await auto_log_version_bump(
+        db,
+        agent_id=agent.id,
+        old_card=old_card,
+        new_card=card,
+        version_from=agent.version,
+        version_to=new_version,
+        created_by=str(user["id"]),
+    )
+
     agent.name = req.name
     agent.description = req.description
     agent.card = card
     agent.version = new_version
+    agent.risk_class = req.risk_class
     await db.commit()
     await db.refresh(agent)
 
@@ -627,7 +644,12 @@ async def update_agent(
         actor_role="provider",
         resource_type="agent",
         resource_id=agent_id,
-        payload={"name": req.name, "version": new_version},
+        payload={
+            "name": req.name,
+            "version": new_version,
+            "modification_id": str(modification.id),
+            "classification_suggested": modification.classification,
+        },
     )
     await db.commit()
 

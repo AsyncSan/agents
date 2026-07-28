@@ -230,6 +230,31 @@ class AgentForgeDispatcher:
             )
             log.info("Injected git credentials")
 
+        # Direct auth-profiles.json injection for OpenClaw
+        anthropic_key = all_keys.get("ANTHROPIC_API_KEY")
+        if anthropic_key:
+            import base64 as b64mod
+            auth_json = json.dumps({
+                "version": 1,
+                "profiles": {
+                    "anthropic:manual": {
+                        "type": "token",
+                        "provider": "anthropic",
+                        "token": anthropic_key,
+                    }
+                },
+                "lastGood": {"anthropic": "anthropic:manual"},
+                "usageStats": {},
+            })
+            encoded = b64mod.b64encode(auth_json.encode()).decode()
+            self.compute.ssh(
+                server,
+                "mkdir -p /root/.openclaw/agents/main/agent && "
+                f"echo '{encoded}' | base64 -d > /root/.openclaw/agents/main/agent/auth-profiles.json",
+                check=False,
+            )
+            log.info("Injected OpenClaw auth-profiles.json directly")
+
     def _write_env_file(self, server: ServerInfo, path: str, keys: dict[str, str]) -> None:
         """Write a dict of key-value pairs as an env file on the server.
 
@@ -238,7 +263,7 @@ class AgentForgeDispatcher:
         """
         import base64
 
-        env_lines = [f"{k}={v}" for k, v in keys.items()]
+        env_lines = [f"export {k}='{v}'" for k, v in keys.items()]
         env_content = "\n".join(env_lines)
         b64 = base64.b64encode(env_content.encode()).decode()
         self.compute.ssh(

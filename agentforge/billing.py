@@ -18,6 +18,35 @@ from agentforge.config import settings
 
 log = logging.getLogger("agentforge.billing")
 
+# Plan limits matching CatalogPage pricing tiers
+PLAN_LIMITS: dict[str, dict[str, int | float]] = {
+    "starter": {
+        "tasks_per_month": 4,
+        "scheduled_agents": 1,
+        "max_concurrent": 1,
+    },
+    "pro": {
+        "tasks_per_month": 20,
+        "scheduled_agents": 5,
+        "max_concurrent": 5,
+    },
+    "team": {
+        "tasks_per_month": 60,
+        "scheduled_agents": 20,
+        "max_concurrent": 20,
+    },
+    "enterprise": {
+        "tasks_per_month": float("inf"),
+        "scheduled_agents": float("inf"),
+        "max_concurrent": float("inf"),
+    },
+}
+
+
+def get_plan_limits(plan: str) -> dict[str, int | float]:
+    """Get limits for a subscription plan."""
+    return PLAN_LIMITS.get(plan, PLAN_LIMITS["starter"])
+
 
 def _init_stripe() -> bool:
     """Initialize Stripe with secret key. Returns True if configured."""

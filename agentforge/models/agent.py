@@ -21,6 +21,9 @@ class Agent(Base, TimestampMixin):
     card: Mapped[dict] = mapped_column(JSONB, nullable=False)  # full AgentCapabilityCard
     status: Mapped[str] = mapped_column(String(50), default="active")
 
+    # EU AI Act risk classification (Art. 6/9): minimal, limited, high
+    risk_class: Mapped[str] = mapped_column(String(50), default="minimal")
+
     # Ed25519 signature of the canonical card (hex)
     signature: Mapped[str | None] = mapped_column(Text, nullable=True)
 
