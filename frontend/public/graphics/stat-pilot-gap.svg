@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <linearGradient id="barGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#00d4ff;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#00d4ff;stop-opacity:0.4"/>
+    </linearGradient>
+    <linearGradient id="bgGlow" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" style="stop-color:#00d4ff;stop-opacity:0.03"/>
+      <stop offset="100%" style="stop-color:#0a0a0f;stop-opacity:0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="#0a0a0f"/>
+  <rect width="1200" height="630" fill="url(#bgGlow)"/>
+
+  <!-- Subtle grid lines -->
+  <line x1="0" y1="200" x2="1200" y2="200" stroke="#1e293b" stroke-width="0.5" stroke-dasharray="4,8"/>
+  <line x1="0" y1="400" x2="1200" y2="400" stroke="#1e293b" stroke-width="0.5" stroke-dasharray="4,8"/>
+
+  <!-- Big number: 78% -->
+  <text x="100" y="280" font-family="monospace" font-size="160" font-weight="bold" fill="#00d4ff">78%</text>
+
+  <!-- Smaller number: 14% -->
+  <text x="580" y="260" font-family="monospace" font-size="80" font-weight="bold" fill="#f59e0b">14%</text>
+
+  <!-- Labels -->
+  <text x="100" y="320" font-family="monospace" font-size="20" fill="#64748b">Pilot</text>
+  <text x="580" y="300" font-family="monospace" font-size="20" fill="#64748b">Production</text>
+
+  <!-- Subtitle -->
+  <text x="100" y="390" font-family="monospace" font-size="24" fill="#f1f5f9">of AI agent projects never reach production</text>
+
+  <!-- Progress bar background -->
+  <rect x="100" y="430" width="1000" height="12" rx="6" fill="#1e293b"/>
+
+  <!-- Pilot segment (78%) -->
+  <rect x="100" y="430" width="780" height="12" rx="6" fill="url(#barGrad)"/>
+
+  <!-- Production segment (14%) -->
+  <rect x="880" y="430" width="140" height="12" rx="6" fill="#f59e0b" opacity="0.7"/>
+
+  <!-- Bar labels -->
+  <text x="440" y="470" font-family="monospace" font-size="13" fill="#00d4ff" text-anchor="middle">78% stuck in pilot</text>
+  <text x="950" y="470" font-family="monospace" font-size="13" fill="#f59e0b" text-anchor="middle">14% production</text>
+
+  <!-- Gap indicator -->
+  <text x="830" y="470" font-family="monospace" font-size="13" fill="#64748b" text-anchor="middle">8% other</text>
+
+  <!-- Source -->
+  <text x="100" y="570" font-family="monospace" font-size="14" fill="#64748b">Source: LangChain State of Agent Engineering 2026</text>
+
+  <!-- Branding -->
+  <text x="1100" y="570" font-family="monospace" font-size="14" fill="#64748b" text-anchor="end">agents.renemurrell.de</text>
+</svg>

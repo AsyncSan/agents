@@ -67,10 +67,10 @@ function StepViz({ pipeline }: { pipeline: Pipeline }) {
               )}
               {stepsInGroup.map((step, si) => (
                 <div key={si} className="flex items-center gap-1">
-                  {(step as Record<string, unknown>).condition && (
+                  {!!(step as unknown as Record<string, unknown>).condition && (
                     <span
                       className="text-amber-400"
-                      title={`if ${((step as Record<string, unknown>).condition as Record<string, string>).field} ${((step as Record<string, unknown>).condition as Record<string, string>).op} ${((step as Record<string, unknown>).condition as Record<string, string>).value ?? ""}`}
+                      title={`if ${((step as unknown as Record<string, unknown>).condition as Record<string, string>).field} ${((step as unknown as Record<string, unknown>).condition as Record<string, string>).op} ${((step as unknown as Record<string, unknown>).condition as Record<string, string>).value ?? ""}`}
                     >
                       <Filter size={8} />
                     </span>

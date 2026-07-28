@@ -1,0 +1,26 @@
+[
+  {
+    "slug": "credit-scoring",
+    "title": "Credit scoring (fintech KMU)",
+    "fria": "fria-credit-scoring.pdf",
+    "annex_iv": "annex-iv-credit-scoring.pdf"
+  },
+  {
+    "slug": "hr-hiring",
+    "title": "HR CV screening (HR-Tech KMU)",
+    "fria": "fria-hr-hiring.pdf",
+    "annex_iv": "annex-iv-hr-hiring.pdf"
+  },
+  {
+    "slug": "insurance-pricing",
+    "title": "Health insurance pricing (InsurTech KMU)",
+    "fria": "fria-insurance-pricing.pdf",
+    "annex_iv": "annex-iv-insurance-pricing.pdf"
+  },
+  {
+    "slug": "security-audit",
+    "title": "Automated codebase security audit (engineering team)",
+    "fria": "fria-security-audit.pdf",
+    "annex_iv": "annex-iv-security-audit.pdf"
+  }
+]

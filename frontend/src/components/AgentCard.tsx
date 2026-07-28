@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, Clock, DollarSign } from "lucide-react";
+import { ArrowRight, Clock } from "lucide-react";
 import type { Agent } from "../api";
 import { TrustRing } from "./TrustRing";
 
@@ -13,7 +13,6 @@ const domainColors: Record<string, string> = {
 
 export function AgentCard({ agent }: { agent: Agent }) {
   const domain = agent.card.capabilities.domain;
-  const pricing = agent.card.pricing;
   const runtime = agent.card.runtime;
   const colorClass = domainColors[domain] || "bg-white/5 text-[#94a3b8] border-white/10";
 
@@ -37,10 +36,6 @@ export function AgentCard({ agent }: { agent: Agent }) {
       </p>
 
       <div className="flex items-center gap-4 text-xs text-[#64748b]">
-        <span className="flex items-center gap-1">
-          <DollarSign size={12} />
-          ${pricing.base_price_usd.toFixed(2)}/run
-        </span>
         <span className="flex items-center gap-1">
           <Clock size={12} />
           ~{Math.round(runtime.estimated_duration_seconds / 60)}min

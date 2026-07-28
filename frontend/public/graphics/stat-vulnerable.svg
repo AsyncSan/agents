@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <linearGradient id="bgGlow2" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" style="stop-color:#f59e0b;stop-opacity:0.04"/>
+      <stop offset="100%" style="stop-color:#0a0a0f;stop-opacity:0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="#0a0a0f"/>
+  <rect width="1200" height="630" fill="url(#bgGlow2)"/>
+
+  <!-- Shield icon -->
+  <g transform="translate(900, 120)">
+    <!-- Shield body -->
+    <path d="M0,-80 L70,-55 L70,20 Q70,70 0,95 Q-70,70 -70,20 L-70,-55 Z" fill="none" stroke="#f59e0b" stroke-width="3" opacity="0.8"/>
+    <path d="M0,-65 L55,-45 L55,15 Q55,55 0,75 Q-55,55 -55,15 L-55,-45 Z" fill="#f59e0b" opacity="0.08"/>
+
+    <!-- Exclamation mark -->
+    <rect x="-6" y="-35" width="12" height="55" rx="4" fill="#f59e0b"/>
+    <circle cx="0" cy="40" r="8" fill="#f59e0b"/>
+
+    <!-- Crack lines -->
+    <line x1="72" y1="-20" x2="100" y2="-35" stroke="#f59e0b" stroke-width="1.5" opacity="0.4"/>
+    <line x1="100" y1="-35" x2="95" y2="-15" stroke="#f59e0b" stroke-width="1.5" opacity="0.4"/>
+    <line x1="65" y1="40" x2="90" y2="55" stroke="#f59e0b" stroke-width="1.5" opacity="0.4"/>
+  </g>
+
+  <!-- Big number -->
+  <text x="100" y="280" font-family="monospace" font-size="180" font-weight="bold" fill="#f59e0b">73%</text>
+
+  <!-- Label -->
+  <text x="100" y="330" font-family="monospace" font-size="32" font-weight="bold" fill="#f1f5f9">Vulnerable</text>
+
+  <!-- Subtitle -->
+  <text x="100" y="400" font-family="monospace" font-size="22" fill="#f1f5f9">of production AI deployments have</text>
+  <text x="100" y="435" font-family="monospace" font-size="22" fill="#f59e0b">prompt injection vulnerabilities</text>
+
+  <!-- Warning dots -->
+  <circle cx="100" cy="500" r="4" fill="#f59e0b" opacity="0.3"/>
+  <circle cx="120" cy="500" r="4" fill="#f59e0b" opacity="0.5"/>
+  <circle cx="140" cy="500" r="4" fill="#f59e0b" opacity="0.7"/>
+  <circle cx="160" cy="500" r="4" fill="#f59e0b" opacity="0.9"/>
+  <circle cx="180" cy="500" r="4" fill="#f59e0b"/>
+
+  <!-- Source -->
+  <text x="100" y="570" font-family="monospace" font-size="14" fill="#64748b">Source: AI Security Benchmark Report 2026</text>
+
+  <!-- Branding -->
+  <text x="1100" y="570" font-family="monospace" font-size="14" fill="#64748b" text-anchor="end">agents.renemurrell.de</text>
+</svg>

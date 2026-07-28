@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 600" width="720" height="600">
+  <defs>
+    <linearGradient id="glow3" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#00d4ff" stop-opacity="0.1"/>
+      <stop offset="100%" stop-color="#0a0a0f" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="bar1" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#00d4ff"/>
+      <stop offset="100%" stop-color="#00d4ff" stop-opacity="0.4"/>
+    </linearGradient>
+    <linearGradient id="bar2" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#00b4d8"/>
+      <stop offset="100%" stop-color="#00b4d8" stop-opacity="0.4"/>
+    </linearGradient>
+    <linearGradient id="bar3" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#0096c7"/>
+      <stop offset="100%" stop-color="#0096c7" stop-opacity="0.4"/>
+    </linearGradient>
+    <linearGradient id="bar4" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#0077b6"/>
+      <stop offset="100%" stop-color="#0077b6" stop-opacity="0.4"/>
+    </linearGradient>
+    <linearGradient id="bar5" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#005f99"/>
+      <stop offset="100%" stop-color="#005f99" stop-opacity="0.4"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="720" height="600" fill="#0a0a0f"/>
+  <rect x="0" y="0" width="720" height="600" fill="url(#glow3)" opacity="0.5"/>
+
+  <!-- Title -->
+  <text x="360" y="42" text-anchor="middle" fill="#f1f5f9" font-family="monospace" font-size="20" font-weight="bold">Trust Scoring Algorithm</text>
+  <text x="360" y="64" text-anchor="middle" fill="#00d4ff" font-family="monospace" font-size="12" opacity="0.7">Weighted composite score: 0.00 to 1.00</text>
+
+  <!-- Formula -->
+  <rect x="60" y="85" rx="6" ry="6" width="600" height="36" fill="#00d4ff" fill-opacity="0.05" stroke="#00d4ff" stroke-opacity="0.15" stroke-width="1"/>
+  <text x="360" y="108" text-anchor="middle" fill="#00d4ff" font-family="monospace" font-size="12">T = 0.35(S) + 0.25(D) + 0.20(V) + 0.10(R) + 0.10(U)</text>
+
+  <!-- Factor 1: Success Rate 35% -->
+  <text x="60" y="170" fill="#f1f5f9" font-family="monospace" font-size="14" font-weight="bold">Success Rate</text>
+  <text x="60" y="188" fill="#f1f5f9" font-family="monospace" font-size="10" opacity="0.5">Completed tasks / total tasks</text>
+  <text x="560" y="170" fill="#00d4ff" font-family="monospace" font-size="14" font-weight="bold" text-anchor="end">35%</text>
+  <!-- Bar background -->
+  <rect x="60" y="196" rx="3" ry="3" width="500" height="20" fill="#f1f5f9" fill-opacity="0.04"/>
+  <!-- Bar fill -->
+  <rect x="60" y="196" rx="3" ry="3" width="350" height="20" fill="url(#bar1)" opacity="0.8"/>
+  <!-- Weight marker -->
+  <rect x="575" y="196" rx="3" ry="3" width="60" height="20" fill="#00d4ff" fill-opacity="0.15" stroke="#00d4ff" stroke-opacity="0.3" stroke-width="1"/>
+  <text x="605" y="210" text-anchor="middle" fill="#00d4ff" font-family="monospace" font-size="11">x 0.35</text>
+
+  <!-- Factor 2: Duration Accuracy 25% -->
+  <text x="60" y="252" fill="#f1f5f9" font-family="monospace" font-size="14" font-weight="bold">Duration Accuracy</text>
+  <text x="60" y="270" fill="#f1f5f9" font-family="monospace" font-size="10" opacity="0.5">Estimated vs actual execution time</text>
+  <text x="560" y="252" fill="#00b4d8" font-family="monospace" font-size="14" font-weight="bold" text-anchor="end">25%</text>
+  <rect x="60" y="278" rx="3" ry="3" width="500" height="20" fill="#f1f5f9" fill-opacity="0.04"/>
+  <rect x="60" y="278" rx="3" ry="3" width="250" height="20" fill="url(#bar2)" opacity="0.8"/>
+  <rect x="575" y="278" rx="3" ry="3" width="60" height="20" fill="#00b4d8" fill-opacity="0.15" stroke="#00b4d8" stroke-opacity="0.3" stroke-width="1"/>
+  <text x="605" y="292" text-anchor="middle" fill="#00b4d8" font-family="monospace" font-size="11">x 0.25</text>
+
+  <!-- Factor 3: Volume 20% -->
+  <text x="60" y="334" fill="#f1f5f9" font-family="monospace" font-size="14" font-weight="bold">Volume</text>
+  <text x="60" y="352" fill="#f1f5f9" font-family="monospace" font-size="10" opacity="0.5">Total completed task count (log scale)</text>
+  <text x="560" y="334" fill="#0096c7" font-family="monospace" font-size="14" font-weight="bold" text-anchor="end">20%</text>
+  <rect x="60" y="360" rx="3" ry="3" width="500" height="20" fill="#f1f5f9" fill-opacity="0.04"/>
+  <rect x="60" y="360" rx="3" ry="3" width="200" height="20" fill="url(#bar3)" opacity="0.8"/>
+  <rect x="575" y="360" rx="3" ry="3" width="60" height="20" fill="#0096c7" fill-opacity="0.15" stroke="#0096c7" stroke-opacity="0.3" stroke-width="1"/>
+  <text x="605" y="374" text-anchor="middle" fill="#0096c7" font-family="monospace" font-size="11">x 0.20</text>
+
+  <!-- Factor 4: Recency 10% -->
+  <text x="60" y="416" fill="#f1f5f9" font-family="monospace" font-size="14" font-weight="bold">Recency</text>
+  <text x="60" y="434" fill="#f1f5f9" font-family="monospace" font-size="10" opacity="0.5">Time decay, recent tasks weighted higher</text>
+  <text x="560" y="416" fill="#0077b6" font-family="monospace" font-size="14" font-weight="bold" text-anchor="end">10%</text>
+  <rect x="60" y="442" rx="3" ry="3" width="500" height="20" fill="#f1f5f9" fill-opacity="0.04"/>
+  <rect x="60" y="442" rx="3" ry="3" width="100" height="20" fill="url(#bar4)" opacity="0.8"/>
+  <rect x="575" y="442" rx="3" ry="3" width="60" height="20" fill="#0077b6" fill-opacity="0.15" stroke="#0077b6" stroke-opacity="0.3" stroke-width="1"/>
+  <text x="605" y="456" text-anchor="middle" fill="#0077b6" font-family="monospace" font-size="11">x 0.10</text>
+
+  <!-- Factor 5: Ratings 10% -->
+  <text x="60" y="498" fill="#f1f5f9" font-family="monospace" font-size="14" font-weight="bold">Ratings</text>
+  <text x="60" y="516" fill="#f1f5f9" font-family="monospace" font-size="10" opacity="0.5">Consumer feedback scores (1-5 stars)</text>
+  <text x="560" y="498" fill="#005f99" font-family="monospace" font-size="14" font-weight="bold" text-anchor="end">10%</text>
+  <rect x="60" y="524" rx="3" ry="3" width="500" height="20" fill="#f1f5f9" fill-opacity="0.04"/>
+  <rect x="60" y="524" rx="3" ry="3" width="100" height="20" fill="url(#bar5)" opacity="0.8"/>
+  <rect x="575" y="524" rx="3" ry="3" width="60" height="20" fill="#005f99" fill-opacity="0.15" stroke="#005f99" stroke-opacity="0.3" stroke-width="1"/>
+  <text x="605" y="538" text-anchor="middle" fill="#005f99" font-family="monospace" font-size="11">x 0.10</text>
+
+  <!-- Result -->
+  <line x1="60" y1="562" x2="660" y2="562" stroke="#f1f5f9" stroke-opacity="0.1" stroke-width="1"/>
+  <rect x="200" y="570" rx="8" ry="8" width="320" height="22" fill="#00d4ff" fill-opacity="0.08" stroke="#00d4ff" stroke-opacity="0.25" stroke-width="1"/>
+  <text x="360" y="586" text-anchor="middle" fill="#00d4ff" font-family="monospace" font-size="13" font-weight="bold">Trust Score: 0.00 ---- 1.00</text>
+</svg>

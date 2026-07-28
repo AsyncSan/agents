@@ -44,6 +44,7 @@ export interface Task {
   inputs: Record<string, unknown> | null;
   constraints: Record<string, unknown> | null;
   callback_url: string | null;
+  step_index?: number;
   created_at: string;
   updated_at: string;
 }
@@ -81,15 +82,33 @@ export async function getAgent(id: string): Promise<Agent> {
   return res.json();
 }
 
-export async function register(name: string, email: string, role: "provider" | "consumer") {
+export async function register(
+  name: string,
+  email: string,
+  role: "provider" | "consumer",
+  password?: string,
+) {
   const res = await fetch(`${BASE}/v1/auth/register`, {
     method: "POST",
     headers: headers(),
-    body: JSON.stringify({ name, email, role }),
+    body: JSON.stringify(password ? { name, email, role, password } : { name, email, role }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: { message: "Registration failed" } }));
     throw new Error(err.error?.message || err.detail || "Registration failed");
+  }
+  return res.json();
+}
+
+export async function login(email: string, password: string) {
+  const res = await fetch(`${BASE}/v1/auth/login`, {
+    method: "POST",
+    headers: headers(),
+    body: JSON.stringify({ email, password }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: { message: "Login failed" } }));
+    throw new Error(err.error?.message || err.detail || "Invalid email or password");
   }
   return res.json();
 }
@@ -123,6 +142,15 @@ export async function getTask(apiKey: string, id: string): Promise<Task> {
 
 export async function getExecutions(apiKey: string, taskId: string): Promise<Execution[]> {
   const res = await fetch(`${BASE}/v1/tasks/${taskId}/executions`, { headers: headers(apiKey) });
+  return res.json();
+}
+
+export async function approveTask(apiKey: string, taskId: string): Promise<Task> {
+  const res = await fetch(`${BASE}/v1/tasks/${taskId}/approve`, {
+    method: "POST",
+    headers: headers(apiKey),
+  });
+  if (!res.ok) throw new Error("Failed to approve task");
   return res.json();
 }
 
@@ -184,6 +212,7 @@ export interface Pipeline {
   total_captured_cents: number;
   max_cost_usd: number | null;
   callback_url: string | null;
+  context: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;
 }

@@ -4,6 +4,7 @@ const statusStyles: Record<string, string> = {
   running: "bg-cyan-500/10 text-cyan-400 border-cyan-500/20",
   completed: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
   failed: "bg-red-500/10 text-red-400 border-red-500/20",
+  awaiting_approval: "bg-purple-500/10 text-purple-400 border-purple-500/20",
   provisioning: "bg-violet-500/10 text-violet-400 border-violet-500/20",
   active: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
 };

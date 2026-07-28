@@ -1,0 +1,123 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <linearGradient id="bgGlow6" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" style="stop-color:#00d4ff;stop-opacity:0.03"/>
+      <stop offset="100%" style="stop-color:#0a0a0f;stop-opacity:0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="#0a0a0f"/>
+  <rect width="1200" height="630" fill="url(#bgGlow6)"/>
+
+  <!-- Title -->
+  <text x="600" y="80" font-family="monospace" font-size="40" font-weight="bold" fill="#00d4ff" text-anchor="middle">Zero Trust Agent Execution</text>
+  <text x="600" y="120" font-family="monospace" font-size="20" fill="#64748b" text-anchor="middle">3-path secret brokerage. No key crosses tenant boundaries.</text>
+
+  <!-- Box 1: Consumer Keys -->
+  <rect x="80" y="180" width="300" height="280" rx="12" fill="#0a0a0f" stroke="#00d4ff" stroke-width="2"/>
+  <rect x="80" y="180" width="300" height="50" rx="12" fill="#00d4ff" opacity="0.1"/>
+  <rect x="80" y="218" width="300" height="12" fill="#0a0a0f"/>
+
+  <!-- Lock icon -->
+  <rect x="200" y="192" width="20" height="16" rx="3" fill="none" stroke="#00d4ff" stroke-width="2"/>
+  <path d="M205,192 L205,185 Q210,175 215,185 L215,192" fill="none" stroke="#00d4ff" stroke-width="2"/>
+
+  <text x="230" y="213" font-family="monospace" font-size="16" font-weight="bold" fill="#00d4ff" text-anchor="middle">CONSUMER</text>
+
+  <!-- Key items -->
+  <rect x="110" y="260" width="240" height="36" rx="6" fill="#1e293b" stroke="#00d4ff" stroke-width="0.5" opacity="0.5"/>
+  <text x="130" y="283" font-family="monospace" font-size="13" fill="#f1f5f9">API Keys</text>
+  <circle cx="320" cy="278" r="8" fill="#10b981" opacity="0.3"/>
+  <circle cx="320" cy="278" r="4" fill="#10b981"/>
+
+  <rect x="110" y="310" width="240" height="36" rx="6" fill="#1e293b" stroke="#00d4ff" stroke-width="0.5" opacity="0.5"/>
+  <text x="130" y="333" font-family="monospace" font-size="13" fill="#f1f5f9">OAuth Tokens</text>
+  <circle cx="320" cy="328" r="8" fill="#10b981" opacity="0.3"/>
+  <circle cx="320" cy="328" r="4" fill="#10b981"/>
+
+  <rect x="110" y="360" width="240" height="36" rx="6" fill="#1e293b" stroke="#00d4ff" stroke-width="0.5" opacity="0.5"/>
+  <text x="130" y="383" font-family="monospace" font-size="13" fill="#f1f5f9">Webhook Secrets</text>
+  <circle cx="320" cy="378" r="8" fill="#10b981" opacity="0.3"/>
+  <circle cx="320" cy="378" r="4" fill="#10b981"/>
+
+  <text x="230" y="435" font-family="monospace" font-size="12" fill="#64748b" text-anchor="middle">Tenant-scoped vault</text>
+
+  <!-- Box 2: Provider Keys -->
+  <rect x="450" y="180" width="300" height="280" rx="12" fill="#0a0a0f" stroke="#10b981" stroke-width="2"/>
+  <rect x="450" y="180" width="300" height="50" rx="12" fill="#10b981" opacity="0.1"/>
+  <rect x="450" y="218" width="300" height="12" fill="#0a0a0f"/>
+
+  <!-- Lock icon -->
+  <rect x="570" y="192" width="20" height="16" rx="3" fill="none" stroke="#10b981" stroke-width="2"/>
+  <path d="M575,192 L575,185 Q580,175 585,185 L585,192" fill="none" stroke="#10b981" stroke-width="2"/>
+
+  <text x="600" y="213" font-family="monospace" font-size="16" font-weight="bold" fill="#10b981" text-anchor="middle">PROVIDER</text>
+
+  <!-- Key items -->
+  <rect x="480" y="260" width="240" height="36" rx="6" fill="#1e293b" stroke="#10b981" stroke-width="0.5" opacity="0.5"/>
+  <text x="500" y="283" font-family="monospace" font-size="13" fill="#f1f5f9">LLM Credentials</text>
+  <circle cx="690" cy="278" r="8" fill="#10b981" opacity="0.3"/>
+  <circle cx="690" cy="278" r="4" fill="#10b981"/>
+
+  <rect x="480" y="310" width="240" height="36" rx="6" fill="#1e293b" stroke="#10b981" stroke-width="0.5" opacity="0.5"/>
+  <text x="500" y="333" font-family="monospace" font-size="13" fill="#f1f5f9">Service Accounts</text>
+  <circle cx="690" cy="328" r="8" fill="#10b981" opacity="0.3"/>
+  <circle cx="690" cy="328" r="4" fill="#10b981"/>
+
+  <rect x="480" y="360" width="240" height="36" rx="6" fill="#1e293b" stroke="#10b981" stroke-width="0.5" opacity="0.5"/>
+  <text x="500" y="383" font-family="monospace" font-size="13" fill="#f1f5f9">Signing Keys</text>
+  <circle cx="690" cy="378" r="8" fill="#10b981" opacity="0.3"/>
+  <circle cx="690" cy="378" r="4" fill="#10b981"/>
+
+  <text x="600" y="435" font-family="monospace" font-size="12" fill="#64748b" text-anchor="middle">Provider-scoped vault</text>
+
+  <!-- Box 3: Platform Keys -->
+  <rect x="820" y="180" width="300" height="280" rx="12" fill="#0a0a0f" stroke="#f59e0b" stroke-width="2"/>
+  <rect x="820" y="180" width="300" height="50" rx="12" fill="#f59e0b" opacity="0.1"/>
+  <rect x="820" y="218" width="300" height="12" fill="#0a0a0f"/>
+
+  <!-- Lock icon -->
+  <rect x="940" y="192" width="20" height="16" rx="3" fill="none" stroke="#f59e0b" stroke-width="2"/>
+  <path d="M945,192 L945,185 Q950,175 955,185 L955,192" fill="none" stroke="#f59e0b" stroke-width="2"/>
+
+  <text x="970" y="213" font-family="monospace" font-size="16" font-weight="bold" fill="#f59e0b" text-anchor="middle">PLATFORM</text>
+
+  <!-- Key items -->
+  <rect x="850" y="260" width="240" height="36" rx="6" fill="#1e293b" stroke="#f59e0b" stroke-width="0.5" opacity="0.5"/>
+  <text x="870" y="283" font-family="monospace" font-size="13" fill="#f1f5f9">Encryption Keys</text>
+  <circle cx="1060" cy="278" r="8" fill="#10b981" opacity="0.3"/>
+  <circle cx="1060" cy="278" r="4" fill="#10b981"/>
+
+  <rect x="850" y="310" width="240" height="36" rx="6" fill="#1e293b" stroke="#f59e0b" stroke-width="0.5" opacity="0.5"/>
+  <text x="870" y="333" font-family="monospace" font-size="13" fill="#f1f5f9">Audit Logs</text>
+  <circle cx="1060" cy="328" r="8" fill="#10b981" opacity="0.3"/>
+  <circle cx="1060" cy="328" r="4" fill="#10b981"/>
+
+  <rect x="850" y="360" width="240" height="36" rx="6" fill="#1e293b" stroke="#f59e0b" stroke-width="0.5" opacity="0.5"/>
+  <text x="870" y="383" font-family="monospace" font-size="13" fill="#f1f5f9">Root Certificates</text>
+  <circle cx="1060" cy="378" r="8" fill="#10b981" opacity="0.3"/>
+  <circle cx="1060" cy="378" r="4" fill="#10b981"/>
+
+  <text x="970" y="435" font-family="monospace" font-size="12" fill="#64748b" text-anchor="middle">Platform-scoped vault</text>
+
+  <!-- Isolation indicators (X marks between boxes) -->
+  <!-- Between box 1 and 2 -->
+  <line x1="395" y1="305" x2="435" y2="325" stroke="#ef4444" stroke-width="2.5" opacity="0.7"/>
+  <line x1="435" y1="305" x2="395" y2="325" stroke="#ef4444" stroke-width="2.5" opacity="0.7"/>
+  <text x="415" y="355" font-family="monospace" font-size="11" fill="#ef4444" text-anchor="middle" opacity="0.7">ISOLATED</text>
+
+  <!-- Between box 2 and 3 -->
+  <line x1="765" y1="305" x2="805" y2="325" stroke="#ef4444" stroke-width="2.5" opacity="0.7"/>
+  <line x1="805" y1="305" x2="765" y2="325" stroke="#ef4444" stroke-width="2.5" opacity="0.7"/>
+  <text x="785" y="355" font-family="monospace" font-size="11" fill="#ef4444" text-anchor="middle" opacity="0.7">ISOLATED</text>
+
+  <!-- Bottom bar -->
+  <rect x="80" y="490" width="1040" height="50" rx="8" fill="#1e293b" opacity="0.4" stroke="#00d4ff" stroke-width="0.5"/>
+  <circle cx="120" cy="515" r="8" fill="#10b981" opacity="0.3"/>
+  <circle cx="120" cy="515" r="4" fill="#10b981"/>
+  <text x="140" y="520" font-family="monospace" font-size="14" fill="#f1f5f9">Each path encrypted at rest and in transit. Runtime injection only. No key persists in agent memory.</text>
+
+  <!-- Branding -->
+  <text x="1100" y="580" font-family="monospace" font-size="14" fill="#64748b" text-anchor="end">agents.renemurrell.de</text>
+</svg>
