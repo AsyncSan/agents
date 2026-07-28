@@ -42,3 +42,4 @@ migrations/versions/__pycache__/
 # Results / Artifacts
 results/
 *.log
+.env
