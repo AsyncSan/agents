@@ -43,3 +43,16 @@ migrations/versions/__pycache__/
 results/
 *.log
 .env
+
+# GTM-Material — liegt privat in AsyncSan/agents-gtm (~/agents-gtm)
+COMMUNITY_SEEDING_PLAN.md
+COMPLIANCE_ROADMAP.md
+CONTENT_MARKETING_PLAN.md
+EVENTS_PLAN.md
+EVENT_MATERIALS.md
+GTM_LEARNINGS.md
+GTM_RESEARCH_SYNTHESE.md
+PITCH_DECK.md
+PRODUCT_HUNT_LISTING.md
+SPEAKER_APPLICATIONS.md
+outreach/
